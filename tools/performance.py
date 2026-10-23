@@ -22,6 +22,7 @@ Standard library only.
 
 import datetime
 import json
+import math
 import subprocess
 import sys
 from pathlib import Path
@@ -82,21 +83,23 @@ def plugin_table(data):
     return "\n".join(lines)
 
 
+def percent(value):
+    """CPU points as a whole percent, rounded up."""
+    return f"{math.ceil(value)} %"
+
+
 def summary_table(all_data):
     """Markdown table with one row per measured plugin, for README.md."""
     lines = [
-        "| Plugin | Version | CPU, defaults | CPU, highest setting | Memory | Binary | Measured |",
-        "|---|---|---|---|---|---|---|",
+        "| Plugin | Version | CPU, highest setting | Memory | Binary |",
+        "|---|---|---|---|---|",
     ]
     for name, data in all_data.items():
-        rows = data["cpu_points"]
-        default = rows[0]
-        highest = max(rows, key=lambda row: row["median"])
+        highest = max(data["cpu_points"], key=lambda row: row["median"])
         memory = data["memory_kb"]
         lines.append(
-            f"| `{name}` | {data['version']} | {points(default['median'])} | "
-            f"{points(highest['median'])} ({highest['settings']}) | {kb(memory['allocated'])} kB | {memory['binary']} kB | "
-            f"{data['date']} |"
+            f"| `{name}` | {data['version']} | {percent(highest['median'])} ({highest['settings']}) | "
+            f"{kb(memory['allocated'])} kB | {memory['binary']} kB |"
         )
     return "\n".join(lines)
 

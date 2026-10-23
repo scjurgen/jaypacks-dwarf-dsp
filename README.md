@@ -15,61 +15,93 @@ docker), and automated tests on the device.
   algorithms, realistic simulation of specific pedals, amps or rooms is not the
   point; the point is to go beyond what a physical device can do, using what
   digital audio makes possible.
-- **Heavy LLM assistance.** The project is developed with Claude Code doing much
-  of the work, from porting and testing DSP to building and testing on the
-  device, guided by the author's decisions and ears. Working this way, with an
-  LLM as a constant collaborator, is where working, creation and musicianship
-  are heading; it turns ideas into working, playable plugins far faster than
-  working alone. The repository is organised for it: docs that state the
-  current facts, a roadmap, measured results, and guides for working with an LLM
+- **Working with an LLM.** How this way of working is set up, and why, is
+  described in the [AbacDsp](https://github.com/scjurgen/AbacDsp) library, where
+  the method lives. Here it is applied: the repository states current facts, a
+  roadmap and measured results so that a session can continue the work
   (`docs/genai-development.md`, `docs/working-with-claude-code.md`).
 - **Trust through measurement.** Every claim about the sound is checked against
   theory and measured, on the Mac and on the Dwarf itself, so creative freedom
   rests on plugins that behave: no clicks, no NaNs, no xruns.
 
-The pedal faces as mod-ui shows them (half size; each links to the plugin's page):
+## Plugins
 
-<table>
-  <tr>
-    <td align="center"><a href="docs/plugins/shipahoy.md"><img src="docs/plugins/images/shipahoy.png" width="131" alt="shipahoy in mod-ui"></a><br><sub>Ship Ahoy: resonant filter steered by scripts</sub></td>
-    <td align="center"><a href="docs/plugins/eigenghost.md"><img src="docs/plugins/images/eigenghost.png" width="131" alt="eigenghost in mod-ui"></a><br><sub>Eigenghost: FDN reverb with pitch lines</sub></td>
-    <td align="center"><a href="docs/plugins/jaystwin.md"><img src="docs/plugins/images/jaystwin.png" width="156" alt="jaystwin in mod-ui"></a><br><sub>Jays Twin: Fender Twin amp and cabinet</sub></td>
-    <td align="center"><a href="docs/plugins/morphexsynth.md"><img src="docs/plugins/images/morphexsynth.png" width="156" alt="morphexsynth in mod-ui"></a><br><sub>Morphexsynth: MPE synth</sub></td>
-    <td align="center"><a href="docs/plugins/midiscript.md"><img src="docs/plugins/images/midiscript.png" width="131" alt="midiscript in mod-ui"></a><br><sub>MIDI Script: MIDI effect in Lua</sub></td>
-  </tr>
-</table>
+The pedal faces are shown as mod-ui renders them (half size). Steps and outlook:
+`docs/roadmap.md`.
 
-## Status
+### Ship Ahoy
 
-All eleven steps of the first roadmap are done (`docs/roadmap.md`). The first
-plugin, `shipahoy`, is a resonant pole-mixing filter named after Frank
-Zappa's "Ship Ahoy", steered by a Lua script: the default script hops the frequency to a
-random value on every step of a tempo clock (about 7 times per second) and glides there, with
-strong resonance; others play sequences or follow what is played into it. Five knobs: Mix,
-Tempo, Script, and X and Y, whose meaning each script decides (`docs/plugins/shipahoy.md`). It
-builds for the Mac and the Dwarf with its pedal face for mod-ui, passes the Mac
-host tests that measure what every knob does to the audio, and passes the
-device integration test (`tools/jp.py test-device shipahoy`). Three test
-plugins (`probe`, `siggen`, `meter`) measure inside the device's graph and
-report through mod-ui (`docs/test-plugins.md`). The second plugin, `eigenghost`, is a
-diffused FDN reverb with two pitch-shifting lines, mono in and stereo out
-(`docs/plugins/eigenghost.md`, charts in `documentation/Eigenghost/`); it passes the Mac
-tests and the device integration test (`tools/jp.py test-device eigenghost`) and waits for
-the author's listening test. The third, `jaystwin` ("Jays Twin"), is a simple Fender Twin
-Reverb amp and 2x12 cabinet from biquads for guitar: the real AB763 tone stack, bright
-switch, atan drive, a cabinet fitted to the Jensen C12K datasheet (`docs/plugins/jaystwin.md`,
-charts in `documentation/JaysTwin/`; the gain goes up to eleven); it passes the Mac tests
-and the device integration test (`tools/jp.py test-device jaystwin`); the author's listening
-test in Reaper found it ok. The fourth, `morphexsynth` ("Morphexsynth"), is an MPE subtractive synth
-after AbacDsp's: 12 voices of three wavetable oscillators through a resonant filter, envelopes, LFO,
-distortion and a routing matrix for the per-note controllers, with a phaser, chorus and reverb and ten
-factory patches (`docs/plugins/morphexsynth.md`, the patches in `docs/plugins/morphexsynth-patches.md`, `docs/roadmap.md`, "Morphexsynth"); it passes the Mac
-tests and the device integration test (`tools/jp.py test-device morphexsynth`: level and pitch against
-the same pedal on the Mac, MIDI from the ALSA sequencer like a USB controller) and waits for the author's
-listening test on the Dwarf. The fifth, `midiscript` ("MIDI Script"), is a MIDI effect whose logic is a Lua script
-(arpeggiator, chord player, scale quantiser, octave doubler, CC remap, your own), with an exact-sample clock and no hung
-notes (`docs/plugins/midiscript.md`, `docs/scripting.md`); it passes the Mac tests and the device integration test (`tools/jp.py test-device midiscript`: the arpeggio keeps the
-board's tempo, reload, panic, broken files) and waits for the author's listening test on the Dwarf.
+<a href="docs/plugins/shipahoy.md"><img src="docs/plugins/images/shipahoy.png" width="131" alt="shipahoy in mod-ui" align="left" hspace="12"></a>
+
+A resonant pole-mixing filter named after Frank Zappa's "Ship Ahoy", steered by a Lua
+script. The default script hops the frequency to a random value on every step of a tempo
+clock (about 7 per second) and glides there, with strong resonance; others play sequences
+or follow what is played into it. Five knobs: Mix, Tempo, Script, and X and Y, whose
+meaning each script decides.
+
+Page: `docs/plugins/shipahoy.md`
+
+**Status:** Mac tests pass, device test passes (`tools/jp.py test-device shipahoy`).
+
+<br clear="left">
+
+### Eigenghost
+
+<a href="docs/plugins/eigenghost.md"><img src="docs/plugins/images/eigenghost.png" width="131" alt="eigenghost in mod-ui" align="left" hspace="12"></a>
+
+A diffused FDN reverb with two pitch-shifting lines, mono in, stereo out.
+
+Page: `docs/plugins/eigenghost.md`, charts: `documentation/Eigenghost/`
+
+**Status:** Mac tests pass, device test passes (`tools/jp.py test-device eigenghost`).
+
+<br clear="left">
+
+### Jays Twin
+
+<a href="docs/plugins/jaystwin.md"><img src="docs/plugins/images/jaystwin.png" width="156" alt="jaystwin in mod-ui" align="left" hspace="12"></a>
+
+A simple Fender Twin Reverb amp and 2x12 cabinet from biquads, for guitar: the real AB763
+tone stack, bright switch, atan drive (the gain goes up to eleven), and a cabinet fitted to
+the Jensen C12K datasheet.
+
+Page: `docs/plugins/jaystwin.md`, charts: `documentation/JaysTwin/`
+
+**Status:** Mac tests pass, device test passes (`tools/jp.py test-device jaystwin`).
+
+<br clear="left">
+
+### Morphexsynth
+
+<a href="docs/plugins/morphexsynth.md"><img src="docs/plugins/images/morphexsynth.png" width="156" alt="morphexsynth in mod-ui" align="left" hspace="12"></a>
+
+An MPE subtractive synth after AbacDsp's: 12 voices of three wavetable oscillators through
+a resonant filter, envelopes, LFO, distortion and a routing matrix for the per-note
+controllers, with a phaser, chorus and reverb and ten factory patches.
+
+Page: `docs/plugins/morphexsynth.md`, patches: `docs/plugins/morphexsynth-patches.md`
+
+**Status:** Mac tests pass, device test passes (`tools/jp.py test-device morphexsynth`: level and pitch against the same pedal on the Mac, MIDI from the ALSA sequencer like a USB controller).
+
+<br clear="left">
+
+### MIDI Script
+
+<a href="docs/plugins/midiscript.md"><img src="docs/plugins/images/midiscript.png" width="131" alt="midiscript in mod-ui" align="left" hspace="12"></a>
+
+A MIDI effect whose logic is a Lua script: arpeggiator, chord player, scale quantiser,
+octave doubler, CC remap, or your own. Exact-sample clock, no hung notes.
+
+Page: `docs/plugins/midiscript.md`, scripting: `docs/scripting.md`
+
+**Status:** Mac tests pass, device test passes (`tools/jp.py test-device midiscript`: the arpeggio keeps the board's tempo, reload, panic, broken files).
+
+<br clear="left">
+
+### Test plugins
+
+`probe`, `siggen` and `meter` measure inside the device's graph and report through
+mod-ui (`docs/test-plugins.md`).
 
 ## Performance on the Dwarf
 
@@ -81,16 +113,16 @@ counted on the Mac by its memory probe, `docs/testing.md`): the device cannot sh
 (`docs/device.md`, "Performance measurement").
 
 <!-- perf:begin -->
-| Plugin | Version | CPU, defaults | CPU, highest setting | Memory | Binary | Measured |
-|---|---|---|---|---|---|---|
-| `eigenghost` | 0.1.1 | 6.0 | 6.1 (preset Small room) | 1648 kB | 58 kB | 2026-10-16 |
-| `jaystwin` | 0.1.0 | 0.6 | 0.6 (defaults) | 0.9 kB | 22 kB | 2026-10-16 |
-| `meter` | 0.1.0 | 1.2 | 1.2 (defaults) | 3.5 kB | 22 kB | 2026-10-15 |
-| `midiscript` | 0.1.0 | 0.6 | 3.4 (Arpeggiator, 3 keys held) | 50 kB | 363 kB | 2026-10-18 |
-| `morphexsynth` | 0.1.1 | 7.2 | 49.2 (12 notes, Section Brass) | 2498 kB | 513 kB | 2026-10-18 |
-| `probe` | 0.1.0 | 8.7 | 8.7 (idle (no note)) | 0.2 kB | 10 kB | 2026-10-17 |
-| `shipahoy` | 0.3.0 | 1.7 | 4.4 (preset Slow drift) | 71 kB | 375 kB | 2026-10-23 |
-| `siggen` | 0.1.0 | 0.5 | 0.5 (defaults) | 0.3 kB | 10 kB | 2026-10-15 |
+| Plugin | Version | CPU, highest setting | Memory | Binary |
+|---|---|---|---|---|
+| `eigenghost` | 0.1.1 | 7 % (preset Small room) | 1648 kB | 58 kB |
+| `jaystwin` | 0.1.0 | 1 % (defaults) | 0.9 kB | 22 kB |
+| `meter` | 0.1.0 | 2 % (defaults) | 3.5 kB | 22 kB |
+| `midiscript` | 0.1.0 | 4 % (Arpeggiator, 3 keys held) | 50 kB | 363 kB |
+| `morphexsynth` | 0.1.1 | 50 % (12 notes, Section Brass) | 2498 kB | 513 kB |
+| `probe` | 0.1.0 | 9 % (idle (no note)) | 0.2 kB | 10 kB |
+| `shipahoy` | 0.3.0 | 5 % (preset Slow drift) | 71 kB | 375 kB |
+| `siggen` | 0.1.0 | 1 % (defaults) | 0.3 kB | 10 kB |
 <!-- perf:end -->
 
 ## Quick start

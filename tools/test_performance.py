@@ -39,7 +39,12 @@ class TablesTest(unittest.TestCase):
 
     def test_summary_names_the_highest_setting(self):
         table = performance.summary_table({"demo": SAMPLE})
-        self.assertIn("| `demo` | 0.1.0 | 2.4 | 3.0 (preset Fast) | 1648 kB | 180 kB | 2026-10-15 |", table)
+        self.assertIn("| `demo` | 0.1.0 | 4 % (preset Fast) | 1648 kB | 180 kB |", table)
+
+    def test_percent_rounds_up(self):
+        self.assertEqual(performance.percent(0.5), "1 %")
+        self.assertEqual(performance.percent(6.0), "6 %")
+        self.assertEqual(performance.percent(6.1), "7 %")
 
     def test_small_sizes_keep_a_decimal(self):
         self.assertEqual(performance.kb(0.9), "0.9")
