@@ -1,0 +1,209 @@
+{
+  "name": "morphexsynth",
+  "displayname": "Morphexsynth",
+  "plugintype": "InstrumentPlugin",
+  "color": "Synth",
+  "major": 0,
+  "minor": 1,
+  "micro": 1,
+  "shortdescription": "MPE subtractive synth, 12 voices, with phaser, chorus and reverb",
+  "description": [
+    "An MPE-capable subtractive synth after the Morphexsynth of AbacDsp, played from MIDI (no audio input).",
+    "Each of the 12 voices has three wavetable oscillators (triangle, shark fin, saw, square, white noise) with detune and pulse width, a resonant filter, amplitude, filter and pitch envelopes, an LFO, a distortion stage and a routing matrix of 10 slots that sends the per-note bend (X), CC 74 or mod wheel (Y), channel pressure (Z), velocity and the filter envelope to pitch, cutoff, resonance and more.",
+    "The Patch menu selects one of ten factory patches; they set the sound, the routing and the effects. Vol (default -6 dB), Cutoff and Resonance move the patch's level, cutoff (in semitones) and resonance (in percent); Attack and Release (in ms) lengthen or shorten the attack and release of its amplitude envelope; Reverb (in dB, default -10) lowers or raises the reverb of the patch, Chorus and Phaser (in percent) scale its effects. Bend range (default 12 semitones) and Glide replace the patch's values when above 0; Pressure scales how much channel or poly pressure (Z) moves the sound.",
+    "MIDI on the master channel and on the member channels of the MPE zone (MPE master 1, lower member 2, upper member 16 by default) plays and controls the notes; a keyboard on channel 1 plays like any other synth.",
+    "The sounds are Lua scripts. The ten factory patches are scripts in the plugin's bundle; the Script setting selects one of your own, user-1.lua to user-8.lua in the scripts folder of the device (/data/jaypacks/scripts/morphexsynth/), which the plugin reloads when the file changes. A script sets the oscillators (also a morph between three waveforms, SetWaveMorph), envelopes, filter, routing and effects with commands such as SetFilter and can react to notes and controllers. Script status shows how it went (1 ok), the file <name>.log in the scripts folder says why a script was rejected, and API.md in the bundle's scripts folder describes everything a script can do."
+  ],
+  "midi-in": true,
+  "worker": true,
+  "audio-ports-in": [],
+  "audio-ports-out": [
+    {
+      "name": "Out L",
+      "symbol": "outL"
+    },
+    {
+      "name": "Out R",
+      "symbol": "outR"
+    }
+  ],
+  "ports-control": [
+    {
+      "hasUI": 0,
+      "display": "Patch",
+      "symbol": "patch",
+      "default": 7,
+      "property": "enumeration",
+      "listitems": [
+        "4 Ever Mini",
+        "Airy Pad",
+        "Crystal Bells",
+        "Cutting Lead",
+        "Grand Stage",
+        "Harp Pluck",
+        "Kick Punch",
+        "Retro Poly",
+        "Section Brass",
+        "Warm Bass"
+      ]
+    },
+    {
+      "hasUI": 1,
+      "display": "Vol",
+      "symbol": "vol",
+      "default": -6,
+      "minimum": -40,
+      "maximum": 12,
+      "unit": "db"
+    },
+    {
+      "hasUI": 1,
+      "display": "Cutoff",
+      "symbol": "cutoff",
+      "default": 0,
+      "minimum": -48,
+      "maximum": 48,
+      "unit": "semitone"
+    },
+    {
+      "hasUI": 1,
+      "display": "Resonance",
+      "symbol": "resonance",
+      "default": 0,
+      "minimum": -50,
+      "maximum": 100,
+      "unit": "pc"
+    },
+    {
+      "hasUI": 1,
+      "display": "Reverb",
+      "symbol": "reverb",
+      "default": -10,
+      "minimum": -60,
+      "maximum": 12,
+      "unit": "db"
+    },
+    {
+      "hasUI": 0,
+      "display": "Chorus",
+      "symbol": "chorus",
+      "default": 100,
+      "minimum": 0,
+      "maximum": 200,
+      "unit": "pc"
+    },
+    {
+      "hasUI": 0,
+      "display": "Phaser",
+      "symbol": "phaser",
+      "default": 100,
+      "minimum": 0,
+      "maximum": 200,
+      "unit": "pc"
+    },
+    {
+      "hasUI": 0,
+      "display": "Bend range",
+      "symbol": "bendRange",
+      "default": 12,
+      "minimum": 0,
+      "maximum": 24,
+      "unit": "semitone",
+      "property": "integer"
+    },
+    {
+      "hasUI": 0,
+      "display": "Glide",
+      "symbol": "glide",
+      "default": 0,
+      "minimum": 0,
+      "maximum": 2000,
+      "unit": "ms"
+    },
+    {
+      "hasUI": 0,
+      "display": "Pressure",
+      "symbol": "pressure",
+      "default": 200,
+      "minimum": 0,
+      "maximum": 400,
+      "unit": "pc"
+    },
+    {
+      "hasUI": 0,
+      "display": "MPE master",
+      "symbol": "mpeMaster",
+      "default": 1,
+      "minimum": 1,
+      "maximum": 16,
+      "property": "integer"
+    },
+    {
+      "hasUI": 0,
+      "display": "MPE lower",
+      "symbol": "mpeLower",
+      "default": 2,
+      "minimum": 1,
+      "maximum": 16,
+      "property": "integer"
+    },
+    {
+      "hasUI": 0,
+      "display": "MPE upper",
+      "symbol": "mpeUpper",
+      "default": 16,
+      "minimum": 1,
+      "maximum": 16,
+      "property": "integer"
+    },
+    {
+      "hasUI": 0,
+      "display": "Script",
+      "symbol": "script",
+      "default": 0,
+      "property": "enumeration",
+      "listitems": [
+        "Patch menu",
+        "User 1",
+        "User 2",
+        "User 3",
+        "User 4",
+        "User 5",
+        "User 6",
+        "User 7",
+        "User 8"
+      ]
+    },
+    {
+      "hasUI": 1,
+      "display": "Attack",
+      "symbol": "attack",
+      "default": 0,
+      "minimum": -500,
+      "maximum": 2000,
+      "unit": "ms"
+    },
+    {
+      "hasUI": 1,
+      "display": "Release",
+      "symbol": "release",
+      "default": 0,
+      "minimum": -1000,
+      "maximum": 3000,
+      "unit": "ms"
+    }
+  ],
+  "ports-control-out": [
+    {
+      "display": "Script status",
+      "symbol": "scriptStatus",
+      "minimum": 0,
+      "maximum": 6,
+      "property": "integer"
+    }
+  ],
+  "CPP": {
+    "CLASS_NAME": "jp::MorphexsynthPedal",
+    "INCLUDE": "plugins/morphexsynth/MorphexsynthPedal.h"
+  }
+}

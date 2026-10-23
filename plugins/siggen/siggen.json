@@ -1,0 +1,38 @@
+{
+  "name": "siggen",
+  "displayname": "JP Signal Gen",
+  "plugintype": "GeneratorPlugin",
+  "color": "Synth",
+  "major": 0,
+  "minor": 1,
+  "micro": 0,
+  "shortdescription": "Test plugin: deterministic test signals",
+  "description": [
+    "Test plugin of jaypacks-dwarf-dsp: a signal source for measurements on the device (docs/plugins/siggen.md).",
+    "Waveforms: silence, sine, square, saw, white noise (seeded, the same sequence after every restart), impulses (one sample per period), log sweep (from Frequency to Sweep end in Sweep time, repeated), step (silence for one period, then the level).",
+    "Level is the peak value in dBFS. Square and saw are not band limited.",
+    "Changing Restart (any new value) starts the waveform again at phase 0; Restart id reports the last value applied, RMS the output level of the last full second."
+  ],
+  "audio-ports-in": [],
+  "audio-ports-out": [
+    {"name": "Out", "symbol": "out"}
+  ],
+  "ports-control": [
+    {"hasUI": 0, "display": "Waveform", "symbol": "waveform", "default": 6, "property": "enumeration",
+      "listitems": ["silence", "sine", "square", "saw", "white noise", "impulses", "log sweep", "step"]},
+    {"hasUI": 1, "display": "Frequency", "symbol": "frequency", "default": 1000, "minimum": 1, "maximum": 20000, "unit": "hz", "property": "logarithmic"},
+    {"hasUI": 1, "display": "Level", "symbol": "level", "default": -20, "minimum": -120, "maximum": 0, "unit": "db"},
+    {"hasUI": 0, "display": "Sweep end", "symbol": "sweepEnd", "default": 20000, "minimum": 1, "maximum": 20000, "unit": "hz", "property": "logarithmic"},
+    {"hasUI": 0, "display": "Sweep time", "symbol": "sweepTime", "default": 5, "minimum": 0.1, "maximum": 60, "unit": "s", "property": "logarithmic"},
+    {"hasUI": 0, "display": "On", "symbol": "on", "default": 1, "minimum": 0, "maximum": 1, "property": "toggled"},
+    {"hasUI": 0, "display": "Restart", "symbol": "restart", "default": 0, "minimum": 0, "maximum": 16777215, "property": "integer"}
+  ],
+  "ports-control-out": [
+    {"display": "Restart id", "symbol": "restartId", "minimum": 0, "maximum": 16777215, "property": "integer"},
+    {"display": "RMS", "symbol": "rms", "minimum": -240, "maximum": 10, "unit": "db"}
+  ],
+  "CPP": {
+    "CLASS_NAME": "jp::SigGenPedal",
+    "INCLUDE": "plugins/siggen/SigGenPedal.h"
+  }
+}

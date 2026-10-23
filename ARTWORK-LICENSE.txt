@@ -1,0 +1,61 @@
+Artwork licence of jaypacks-dwarf-dsp
+
+Copyright (c) 2026 Jürgen Schwietering. All rights reserved.
+
+The source code of this repository is licensed under the MIT License, see
+LICENSE. The artwork listed below is NOT licensed under the MIT License. It
+is the look of the pedals, and the author reserves it.
+
+1. Covered files
+
+   generator/graphics.py
+   generator/style.py
+   generator/assets/*.png
+   generator/templates/modgui/icon.css
+   generator/templates/modgui/icon.html
+   documentation/Graphics/
+   docs/plugins/images/
+
+   The images in README.md are the files in docs/plugins/images/. Any logo
+   added to the repository later is covered as well, and so is every image,
+   stylesheet or page that the generator produces from the files above (the
+   modgui folder of a built plugin bundle).
+
+   Not covered: the font generator/assets/fonts/inter/ (SIL Open Font
+   License 1.1, see OFL.txt there), third_party/ (own licences), the plugin
+   blueprints (plugins/*/*.json) and all other files, which stay under MIT.
+
+2. What you may do
+
+   a. Build the plugins from this repository and use them, artwork included,
+      on your own devices and in your own music.
+   b. Quote the artwork in a review, a tutorial or a bug report, with a
+      reference to this repository.
+   c. Fork the code under the MIT License. A fork or derivative product must
+      replace the artwork listed above with its own, and must not use the
+      brand identifiers described in BRANDING.md.
+
+3. What needs written permission
+
+   Except as permitted by applicable law and by section 2, copying,
+   modification, redistribution and other reuse of the artwork require prior
+   written permission from Jürgen Schwietering. This includes distributing
+   or selling built plugin bundles that contain the artwork, in a store, a
+   pedalboard collection, a pack or a download.
+
+4. No trademark licence
+
+   No trademark licence is granted. The project name, the logo and the
+   brand identifiers named in BRANDING.md are reserved.
+
+5. Versions
+
+   This licence applies from the commit that introduces this file. Copies of
+   the repository obtained earlier keep the terms they were obtained under.
+
+6. Warranty
+
+   The artwork is provided "as is", without warranty of any kind.
+
+Permission requests: open an issue at
+https://github.com/scjurgen/jaypacks-dwarf-dsp or write to the author.

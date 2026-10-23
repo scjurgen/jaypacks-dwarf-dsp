@@ -1,0 +1,32 @@
+# YinPitchDetector on the Dwarf: cost per 128-frame block in microseconds (block period 2667 us)
+# Measured 2026-10-22 with documentation/YinPitch/YinDeviceBenchmark.cpp: MOD Dwarf (4 x Cortex-A35), MOD OS v1.13.5.3315,
+# cross-built with the device toolchain (GCC 9.4, the toolchain's flags, -O3), run over ssh while jackd and mod-ui were
+# running and the plugin graph was empty. 8 s of input, the first 400 blocks left out, each block timed with
+# std::chrono::steady_clock. "verbatim" is the AbacDsp detector as published (modulo indexing, no early exit).
+# The mean is what a block costs on average, p99 and max are the blocks that contain a reading; the max of the
+# 1 kHz tone, where almost nothing is computed, shows the scheduler's noise (150 to 500 us).
+input      variant                  hop   mean us    p50 us    p99 us    max us
+tone 82 Hz verbatim                  50   1811.85      2.33  14131.83  15237.54
+tone 82 Hz decimated by 1            50    144.42      3.21   1273.12   1352.17
+tone 82 Hz decimated by 2            50     44.94      7.29    516.25    593.25
+tone 82 Hz decimated by 4            50     18.93      7.00    135.92    496.71
+tone 1 kHz verbatim                  50   1815.56      2.33  14187.83  15219.46
+tone 1 kHz decimated by 1            50     15.85      3.21    116.67    425.54
+tone 1 kHz decimated by 2            50     11.88      7.29     43.17    382.67
+tone 1 kHz decimated by 4            50      9.16      7.00     27.42    311.50
+noise      verbatim                  50   1728.25      2.33  13314.00  14525.29
+noise      decimated by 1            50    149.54      3.21   1336.71   1478.46
+noise      decimated by 2            50     47.36      7.29    631.75    698.83
+noise      decimated by 4            50     18.76      7.00    140.00    367.50
+tone 82 Hz verbatim                  20    674.91      2.33  12781.71  12896.04
+tone 82 Hz decimated by 1            20     55.33      3.21   1041.83   1165.21
+tone 82 Hz decimated by 2            20     21.13      7.29    255.21    383.25
+tone 82 Hz decimated by 4            20     11.06      7.00     74.38    212.33
+tone 1 kHz verbatim                  20    706.00      2.33  13462.75  14772.62
+tone 1 kHz decimated by 1            20      8.31      3.21     97.12    258.71
+tone 1 kHz decimated by 2            20      9.22      7.29     40.54    169.46
+tone 1 kHz decimated by 4            20      8.15      7.00     36.75    156.62
+noise      verbatim                  20    708.37      2.33  13393.04  15729.58
+noise      decimated by 1            20     62.84      3.21   1296.46   1447.25
+noise      decimated by 2            20     23.59      7.29    289.92    660.92
+noise      decimated by 4            20     12.38      7.00     81.67    386.46

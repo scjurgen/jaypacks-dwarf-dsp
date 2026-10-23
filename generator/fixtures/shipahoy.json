@@ -1,0 +1,53 @@
+{
+  "name": "shipahoy",
+  "displayname": "Ship Ahoy",
+  "status": "alpha",
+  "plugintype": "FilterPlugin",
+  "color": "Filter",
+  "major": 0,
+  "minor": 1,
+  "micro": 0,
+  "shortdescription": "Sample-and-hold resonant filter",
+  "description": [
+    "A sample-and-hold filter named after Frank Zappa's \"Ship Ahoy\": at a set rate the filter frequency hops to a random value inside an octave range and glides there.",
+    "For the sound of the track: speed about 7 Hz, resonance high (80-95 %), range 2-4 octaves, short glide, then find the centre frequency by ear.",
+    "Frequency is where the resonance peaks; resonance is relative to self-oscillation there: 100 % is the edge, the top 10 % ring hard and raise the level.",
+    "Random: white (uniform), toggle (low and high in turn), violet (mostly low), brown (a slow walk around the centre), gauss (around the centre).",
+    "To play the frequency from MIDI or an expression pedal, set range to 0 and map the frequency.",
+    "Pole-mixing filter types after https://electricdruid.net/multimode-filters-part-2-pole-mixing-filters"
+  ],
+  "audio-ports-in": [
+    {"name": "In", "symbol": "in"}
+  ],
+  "audio-ports-out": [
+    {"name": "Out", "symbol": "out"}
+  ],
+  "ports-control": [
+    {"hasUI": 1, "display": "Mix", "symbol": "mix", "default": 100, "minimum": -100, "maximum": 100, "unit": "pc"},
+    {"hasUI": 1, "display": "Speed", "symbol": "speed", "default": 7, "minimum": 0.1, "maximum": 16, "unit": "hz", "property": "logarithmic"},
+    {"hasUI": 0, "display": "Glide up", "symbol": "glideUp", "default": 5, "minimum": 1, "maximum": 100, "unit": "pc"},
+    {"hasUI": 0, "display": "Glide down", "symbol": "glideDown", "default": 5, "minimum": 1, "maximum": 100, "unit": "pc"},
+    {"hasUI": 0, "display": "Random", "symbol": "randomType", "default": 0, "property": "enumeration",
+      "listitems": ["white", "toggle", "violet", "brown", "gauss"]},
+    {"hasUI": 0, "display": "Resonance", "symbol": "resonance", "default": 85, "minimum": 0, "maximum": 100, "unit": "pc"},
+    {"hasUI": 0, "display": "Frequency", "symbol": "frequency", "default": 1000, "minimum": 20, "maximum": 6000, "unit": "hz", "property": "logarithmic"},
+    {"hasUI": 0, "display": "Range", "symbol": "octaveRange", "default": 3, "minimum": 0, "maximum": 8, "unit": "oct"},
+    {"hasUI": 0, "display": "Type", "symbol": "filterType", "default": 1, "property": "enumeration",
+      "listitems": [
+        "lp 6 dB", "lp 12 dB", "lp 18 dB", "lp 24 dB",
+        "bp 6 dB", "bp 12 dB",
+        "hp 6 dB", "hp 12 dB", "hp 18 dB", "hp 24 dB",
+        "notch", "notch octaves",
+        "2 pole phaser", "3 pole phaser", "4 pole phaser"
+      ]}
+  ],
+  "presets": [
+    {"name": "Ship Ahoy", "values": {"mix": 100, "speed": 7, "glideUp": 5, "glideDown": 5, "randomType": 0, "resonance": 85, "frequency": 1000, "octaveRange": 3, "filterType": 1}},
+    {"name": "Slow drift", "values": {"mix": 100, "speed": 2, "glideUp": 100, "glideDown": 100, "randomType": 3, "resonance": 60, "frequency": 800, "octaveRange": 4, "filterType": 3}},
+    {"name": "Toggle trill", "values": {"mix": 100, "speed": 10, "glideUp": 10, "glideDown": 10, "randomType": 1, "resonance": 70, "frequency": 1000, "octaveRange": 3, "filterType": 4}}
+  ],
+  "CPP": {
+    "CLASS_NAME": "jp::ShipAhoyPedal",
+    "INCLUDE": "plugins/shipahoy/ShipAhoyPedal.h"
+  }
+}

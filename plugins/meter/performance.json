@@ -1,0 +1,28 @@
+{
+  "plugin": "meter",
+  "version": "0.1.0",
+  "date": "2026-10-15",
+  "commit": "e816f12+changes",
+  "device": {
+    "firmware": "MOD OS v1.13.5.3315",
+    "jack": "48000 Hz, 128 frames"
+  },
+  "source": "siggen white noise at -12 dBFS",
+  "cycles": 3,
+  "window_s": 6.0,
+  "cpu_points": [
+    {
+      "settings": "defaults",
+      "median": 1.17,
+      "min": 1.0,
+      "max": 1.95
+    }
+  ],
+  "memory_kb": {
+    "allocated": 3.5,
+    "peak": 3.5,
+    "counted": "2026-10-16",
+    "binary": 22
+  },
+  "xruns": 0
+}

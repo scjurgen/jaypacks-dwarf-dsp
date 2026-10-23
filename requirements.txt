@@ -1,0 +1,6 @@
+# Python packages for the repository venv .venv (dev-scripts/dev-venv.sh): charts of
+# documentation/ (numpy, matplotlib, versions as in AbacDsp) and the modgui images of
+# generator/graphics.py (Pillow). jpgen.py and the tests need only the standard library.
+numpy==2.5.2
+matplotlib==3.10.8
+Pillow==12.3.0

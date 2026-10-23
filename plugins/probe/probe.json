@@ -1,0 +1,47 @@
+{
+  "name": "probe",
+  "displayname": "JP Probe",
+  "plugintype": "UtilityPlugin",
+  "color": "Mixer",
+  "major": 0,
+  "minor": 1,
+  "micro": 0,
+  "shortdescription": "Test plugin: checks that a host reads control outputs and delivers MIDI",
+  "description": [
+    "Test plugin of jaypacks-dwarf-dsp. Passes the audio through unchanged.",
+    "Echo out repeats Echo in after the next audio block; Seconds counts the audio time since the plugin was activated.",
+    "The MIDI input is counted: MIDI events, the channels seen (bit n for channel n+1) and the last message.",
+    "Every MIDI message is passed on to the MIDI output (MIDI sent), and every note on goes to the host's worker thread and back (Worker jobs, Worker answers, Worker note).",
+    "Used to check that mod-ui reports control output values and that MIDI reaches a plugin (docs/test-plugins.md)."
+  ],
+  "midi-in": true,
+  "midi-out": true,
+  "worker": true,
+  "audio-ports-in": [
+    {"name": "In", "symbol": "in"}
+  ],
+  "audio-ports-out": [
+    {"name": "Out", "symbol": "out"}
+  ],
+  "ports-control": [
+    {"hasUI": 1, "display": "Echo in", "symbol": "echoIn", "default": 0, "minimum": -1000, "maximum": 1000}
+  ],
+  "ports-control-out": [
+    {"display": "Echo out", "symbol": "echoOut", "minimum": -1000, "maximum": 1000},
+    {"display": "Seconds", "symbol": "seconds", "minimum": 0, "maximum": 16777216, "unit": "s"},
+    {"display": "MIDI events", "symbol": "midiEvents", "minimum": 0, "maximum": 16777216, "property": "integer"},
+    {"display": "MIDI channels", "symbol": "midiChannels", "minimum": 0, "maximum": 65535, "property": "integer"},
+    {"display": "MIDI status", "symbol": "midiStatus", "minimum": 0, "maximum": 255, "property": "integer"},
+    {"display": "MIDI data 1", "symbol": "midiData1", "minimum": 0, "maximum": 255, "property": "integer"},
+    {"display": "MIDI data 2", "symbol": "midiData2", "minimum": 0, "maximum": 255, "property": "integer"},
+    {"display": "MIDI sent", "symbol": "midiSent", "minimum": 0, "maximum": 16777216, "property": "integer"},
+    {"display": "MIDI dropped", "symbol": "midiDropped", "minimum": 0, "maximum": 16777216, "property": "integer"},
+    {"display": "Worker jobs", "symbol": "workerJobs", "minimum": 0, "maximum": 16777216, "property": "integer"},
+    {"display": "Worker answers", "symbol": "workerAnswers", "minimum": 0, "maximum": 16777216, "property": "integer"},
+    {"display": "Worker note", "symbol": "workerNote", "minimum": 0, "maximum": 127, "property": "integer"}
+  ],
+  "CPP": {
+    "CLASS_NAME": "jp::ProbePedal",
+    "INCLUDE": "plugins/probe/ProbePedal.h"
+  }
+}

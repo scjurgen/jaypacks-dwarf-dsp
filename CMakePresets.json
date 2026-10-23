@@ -1,0 +1,42 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {"major": 3, "minor": 21, "patch": 0},
+    "configurePresets": [
+        {
+            "name": "mac-debug",
+            "displayName": "Mac debug",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build-${presetName}",
+            "cacheVariables": {"CMAKE_BUILD_TYPE": "Debug"}
+        },
+        {
+            "name": "mac-release",
+            "displayName": "Mac release",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build-${presetName}",
+            "cacheVariables": {"CMAKE_BUILD_TYPE": "Release"}
+        },
+        {
+            "name": "mac-asan",
+            "displayName": "Mac debug with address and undefined behaviour sanitizers",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build-${presetName}",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_CXX_FLAGS": "-fsanitize=address,undefined -fno-omit-frame-pointer",
+                "CMAKE_EXE_LINKER_FLAGS": "-fsanitize=address,undefined",
+                "CMAKE_SHARED_LINKER_FLAGS": "-fsanitize=address,undefined"
+            }
+        }
+    ],
+    "buildPresets": [
+        {"name": "mac-debug", "configurePreset": "mac-debug"},
+        {"name": "mac-release", "configurePreset": "mac-release"},
+        {"name": "mac-asan", "configurePreset": "mac-asan"}
+    ],
+    "testPresets": [
+        {"name": "mac-debug", "configurePreset": "mac-debug", "output": {"outputOnFailure": true}},
+        {"name": "mac-release", "configurePreset": "mac-release", "output": {"outputOnFailure": true}},
+        {"name": "mac-asan", "configurePreset": "mac-asan", "output": {"outputOnFailure": true}}
+    ]
+}

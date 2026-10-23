@@ -1,0 +1,30 @@
+# build output (CMake presets, dev-scripts, tools/jp.py)
+/build-*/
+/cmake-build-*/
+
+# machine-specific notes (never committed) and Claude Code plan files
+/local-info/
+/.claude/
+/openspec/
+/speaker-recordings/
+
+# throwaway experiments (dev-scripts/dev-explore.sh) and tool output
+/explore/
+/scratch/
+/morphex-host-test
+
+# Python venv of the repository (dev-scripts/dev-venv.sh) and generated plot data
+/.venv/
+/documentation/**/generated/
+
+# Python
+__pycache__/
+*.pyc
+
+# IDE and OS
+.idea/
+.vscode/
+.DS_Store
+
+# editor swap files
+*.swp

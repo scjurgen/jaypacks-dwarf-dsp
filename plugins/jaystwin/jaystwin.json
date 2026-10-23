@@ -1,0 +1,42 @@
+{
+  "name": "jaystwin",
+  "displayname": "Jays Twin",
+  "status": "alpha",
+  "plugintype": "AmplifierPlugin",
+  "color": "Driver",
+  "major": 0,
+  "minor": 1,
+  "micro": 0,
+  "shortdescription": "Simple Fender Twin Reverb amp and 2x12 cabinet",
+  "description": [
+    "A simple Fender Twin Reverb (AB763 blackface) for guitar, built from biquad filters: the amp's tone stack, the bright switch, a soft atan drive and a 2x12 open-back cabinet. No reverb, no tremolo.",
+    "Bass, Mid and Treble are the real Twin tone stack (component values of the AB763, after the analysis by D. T. Yeh and J. O. Smith): the knobs interact, and the middle is always scooped, as on the amp.",
+    "Gain stands for the amp's volume knob: it drives the atan stage (louder and more compressed as it goes up) and sets how much the bright cap lifts the treble, strongly at low gain and not at all at 10. And it goes up to eleven. Bright is in the settings.",
+    "The cabinet is fitted to the measured response of the Jensen C12K speaker (Jensen specification sheet); the open back is an assumed low cut at 80 Hz. Level sets the output in dB; turn it down at high gain (the presets are levelled to sound equally loud).",
+    "Not modelled: the power amp (no sag, no power-amp clipping) and the phase inverter."
+  ],
+  "audio-ports-in": [
+    {"name": "In", "symbol": "in"}
+  ],
+  "audio-ports-out": [
+    {"name": "Out", "symbol": "out"}
+  ],
+  "ports-control": [
+    {"hasUI": 1, "display": "Bass", "symbol": "bass", "default": 5, "minimum": 0, "maximum": 10},
+    {"hasUI": 1, "display": "Mid", "symbol": "mid", "default": 5, "minimum": 0, "maximum": 10},
+    {"hasUI": 1, "display": "Treble", "symbol": "treble", "default": 5, "minimum": 0, "maximum": 10},
+    {"hasUI": 1, "display": "Gain", "symbol": "gain", "default": 3, "minimum": 0, "maximum": 11},
+    {"hasUI": 1, "display": "Level", "symbol": "level", "default": 0, "minimum": -30, "maximum": 12, "unit": "db"},
+    {"hasUI": 0, "display": "Bright", "symbol": "bright", "default": 0, "minimum": 0, "maximum": 1, "property": "toggled"}
+  ],
+  "presets": [
+    {"name": "Clean", "values": {"bass": 5, "mid": 5, "treble": 5, "gain": 3, "level": 0, "bright": 0}},
+    {"name": "Bright clean", "values": {"bass": 4, "mid": 5, "treble": 6, "gain": 2, "level": 4, "bright": 1}},
+    {"name": "Edge", "values": {"bass": 5, "mid": 6, "treble": 5, "gain": 7, "level": -10, "bright": 0}},
+    {"name": "Scooped", "values": {"bass": 7, "mid": 2, "treble": 7, "gain": 3, "level": -1, "bright": 0}}
+  ],
+  "CPP": {
+    "CLASS_NAME": "jp::JaysTwinPedal",
+    "INCLUDE": "plugins/jaystwin/JaysTwinPedal.h"
+  }
+}

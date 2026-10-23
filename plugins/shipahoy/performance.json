@@ -1,0 +1,46 @@
+{
+  "plugin": "shipahoy",
+  "version": "0.3.0",
+  "date": "2026-10-23",
+  "commit": "4732074+changes",
+  "device": {
+    "firmware": "MOD OS v1.13.5.3315",
+    "jack": "48000 Hz, 128 frames"
+  },
+  "source": "siggen white noise at -12 dBFS",
+  "cycles": 3,
+  "window_s": 6.0,
+  "cpu_points": [
+    {
+      "settings": "defaults",
+      "median": 1.73,
+      "min": 1.68,
+      "max": 2.03
+    },
+    {
+      "settings": "preset Slow drift",
+      "median": 4.38,
+      "min": 4.38,
+      "max": 4.98
+    },
+    {
+      "settings": "preset Toggle trill",
+      "median": 1.98,
+      "min": 1.88,
+      "max": 2.47
+    },
+    {
+      "settings": "preset Follows playing",
+      "median": 4.05,
+      "min": 3.77,
+      "max": 4.07
+    }
+  ],
+  "memory_kb": {
+    "allocated": 70.6,
+    "peak": 71.2,
+    "counted": "2026-10-23",
+    "binary": 375
+  },
+  "xruns": 0
+}

@@ -1,0 +1,56 @@
+{
+  "name": "shipahoy",
+  "displayname": "Ship Ahoy",
+  "status": "alpha",
+  "plugintype": "FilterPlugin",
+  "color": "Filter",
+  "major": 0,
+  "minor": 3,
+  "micro": 0,
+  "shortdescription": "Resonant filter steered by Lua scripts, in time with the tempo: sample and hold, sequences, follows what you play",
+  "worker": true,
+  "description": [
+    "A resonant pole-mixing filter named after Frank Zappa's \"Ship Ahoy\": a Lua script decides where the filter frequency goes, how resonant it is and which filter type it is, on every step of the tempo clock. The default script (Hop) is the classic: on every step the frequency hops to a random value inside three octaves and glides there.",
+    "The face has five knobs: Mix, Tempo, Script (which script plays), and X and Y, two knobs without a meaning of their own. What X and Y do is decided by the script and written at its top; for the factory scripts X is the glide and Y the resonance (Slow drift: X is the depth of a wobble).",
+    "Steps per second = tempo / 60 x steps per beat (Step setting, 1/16 by default: 4 per beat). The Tempo knob is the tempo when Sync is Free run; with Sync = Transport the board's tempo is used (the knob does not matter) and the filter moves only while the transport rolls.",
+    "For the sound of the track: tempo 105 BPM at 1/16 (7 steps per second), Hop, Y about 85 %, X about 5 %, then listen.",
+    "Resonance is relative to self-oscillation at the frequency: 100 % is the edge, the top 10 % ring hard and raise the level.",
+    "Scripts can also listen to what is played (Follow, Answer, Echo), move the drift, change the filter type and the speed of the clock; see scripts/API.md in the bundle. Your own scripts go to user slots 1 to 8.",
+    "Pole-mixing filter types after https://electricdruid.net/multimode-filters-part-2-pole-mixing-filters"
+  ],
+  "audio-ports-in": [
+    {"name": "In", "symbol": "in"}
+  ],
+  "audio-ports-out": [
+    {"name": "Out", "symbol": "out"}
+  ],
+  "ports-control": [
+    {"hasUI": 1, "display": "Mix", "symbol": "mix", "default": 100, "minimum": 0, "maximum": 100, "unit": "pc"},
+    {"hasUI": 1, "display": "Tempo", "symbol": "tempo", "default": 105, "minimum": 20, "maximum": 300, "unit": "bpm"},
+    {"hasUI": 1, "display": "Script", "symbol": "script", "default": 0, "property": "enumeration",
+      "listitems": ["Hop", "Sequence", "Random hold", "Alternating", "Follow", "Answer", "Echo", "Slow drift", "Toggle trill", "User 1", "User 2", "User 3", "User 4", "User 5", "User 6", "User 7", "User 8"]},
+    {"hasUI": 1, "display": "X", "symbol": "x", "default": 5, "minimum": 0, "maximum": 100, "unit": "pc"},
+    {"hasUI": 1, "display": "Y", "symbol": "y", "default": 85, "minimum": 0, "maximum": 100, "unit": "pc"},
+    {"hasUI": 0, "display": "Sync", "symbol": "sync", "default": 0, "property": "enumeration",
+      "listitems": ["Free run", "Transport"]},
+    {"hasUI": 0, "display": "Step", "symbol": "step", "default": 7, "property": "enumeration",
+      "listitems": ["8/1", "4/1", "2/1", "1/1", "1/2", "1/4", "1/8", "1/16", "1/32", "1/64"]},
+    {"hasUI": 0, "display": "Board tempo", "symbol": "hostTempo", "default": 120, "minimum": 20, "maximum": 300, "unit": "bpm", "designation": "beatsPerMinute"},
+    {"hasUI": 0, "display": "Transport", "symbol": "transport", "default": 0, "minimum": 0, "maximum": 1, "property": "toggled", "designation": "speed"}
+  ],
+  "ports-control-out": [
+    {"display": "Script status", "symbol": "scriptStatus", "minimum": 0, "maximum": 6, "property": "integer"},
+    {"display": "Late", "symbol": "late", "minimum": 0, "maximum": 16777216, "property": "integer"},
+    {"display": "Dropped", "symbol": "dropped", "minimum": 0, "maximum": 16777216, "property": "integer"}
+  ],
+  "presets": [
+    {"name": "Ship Ahoy", "values": {"mix": 100, "tempo": 105, "script": 0, "x": 5, "y": 85}},
+    {"name": "Slow drift", "values": {"mix": 100, "tempo": 30, "script": 7, "x": 50, "y": 60}},
+    {"name": "Toggle trill", "values": {"mix": 100, "tempo": 150, "script": 8, "x": 10, "y": 70}},
+    {"name": "Follows playing", "values": {"mix": 100, "tempo": 105, "script": 4, "x": 70, "y": 80}}
+  ],
+  "CPP": {
+    "CLASS_NAME": "jp::ShipAhoyPedal",
+    "INCLUDE": "plugins/shipahoy/ShipAhoyPedal.h"
+  }
+}

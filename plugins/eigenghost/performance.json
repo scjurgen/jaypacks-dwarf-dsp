@@ -1,0 +1,58 @@
+{
+  "plugin": "eigenghost",
+  "version": "0.1.1",
+  "date": "2026-10-16",
+  "commit": "0f21fec+changes",
+  "device": {
+    "firmware": "MOD OS v1.13.5.3315",
+    "jack": "48000 Hz, 128 frames"
+  },
+  "source": "siggen white noise at -12 dBFS",
+  "cycles": 3,
+  "window_s": 6.0,
+  "cpu_points": [
+    {
+      "settings": "defaults",
+      "median": 6.02,
+      "min": 5.78,
+      "max": 6.08
+    },
+    {
+      "settings": "preset Hall",
+      "median": 5.92,
+      "min": 5.53,
+      "max": 6.02
+    },
+    {
+      "settings": "preset Shimmer",
+      "median": 5.92,
+      "min": 5.65,
+      "max": 6.5
+    },
+    {
+      "settings": "preset Dark octave down",
+      "median": 5.83,
+      "min": 5.65,
+      "max": 5.98
+    },
+    {
+      "settings": "preset Plate",
+      "median": 5.98,
+      "min": 5.37,
+      "max": 6.18
+    },
+    {
+      "settings": "preset Small room",
+      "median": 6.08,
+      "min": 5.52,
+      "max": 6.4
+    }
+  ],
+  "memory_kb": {
+    "allocated": 1647.5,
+    "peak": 1647.5,
+    "counted": "2026-10-16",
+    "binary": 58
+  },
+  "xruns": 0
+}

@@ -1,0 +1,909 @@
+{
+  "schema": 1,
+  "plugin": "shipahoy",
+  "title": "Ship Ahoy",
+  "lua": "5.4.8",
+  "limits": {
+    "textMaxLength": 31,
+    "scriptMaxBytes": 262144,
+    "memoryBytes": 1048576,
+    "handlerInstructions": 100000,
+    "loadInstructions": 2000000,
+    "handlerMillis": 20,
+    "loadMillis": 250
+  },
+  "sandbox": {
+    "libraries": [
+      "base",
+      "math",
+      "table",
+      "string"
+    ],
+    "removedGlobals": [
+      "dofile",
+      "loadfile",
+      "load",
+      "collectgarbage",
+      "warn",
+      "print"
+    ],
+    "removedFields": {
+      "string": [
+        "dump"
+      ]
+    },
+    "runtimeGlobals": [
+      "Log",
+      "print",
+      "clamp",
+      "lerp",
+      "import"
+    ]
+  },
+  "noopImports": [
+    "constants"
+  ],
+  "commands": [
+    {
+      "name": "SetCutoff",
+      "doc": "Glides the frequency of the filter to a note. The glide starts at the sample of the event whose hook calls it (plus the delay, and the lead of the clock for clock events) from where the frequency is; a command during a glide continues from the present value. The plugin has no other way to move the frequency: no script, no movement.",
+      "args": [
+        {
+          "name": "note",
+          "kind": "number",
+          "min": 0,
+          "max": 127,
+          "default": 69,
+          "doc": "MIDI note as a number, 69 = A4 = 440 Hz, fractions are cents; the frequency of the resonance peak, limited to 10 Hz up to a sixth of the sample rate"
+        }
+      ],
+      "fields": [
+        {
+          "name": "ticks",
+          "kind": "number",
+          "min": 0,
+          "max": 1000000,
+          "default": 0,
+          "doc": "length of the step in clock ticks (added to ms); with ms also 0 the step is the present step length of the Step setting"
+        },
+        {
+          "name": "ms",
+          "kind": "number",
+          "min": 0,
+          "max": 600000,
+          "default": 0,
+          "doc": "length of the step in milliseconds"
+        },
+        {
+          "name": "glide",
+          "kind": "number",
+          "min": 0,
+          "max": 1,
+          "default": 0.05,
+          "doc": "the glide lasts this fraction of the step: 0 jumps at once, 0.5 glides during the first half and then holds, 1 arrives as the step ends"
+        },
+        {
+          "name": "delayTicks",
+          "kind": "number",
+          "min": 0,
+          "max": 1000000,
+          "default": 0,
+          "doc": "start this many clock ticks after the event (added to delayMs)"
+        },
+        {
+          "name": "delayMs",
+          "kind": "number",
+          "min": 0,
+          "max": 60000,
+          "default": 0,
+          "doc": "start this many milliseconds after the event whose hook calls it"
+        }
+      ]
+    },
+    {
+      "name": "SpeedRatio",
+      "doc": "Multiplies the speed of the clock (tempo, steps, ticks, timers set from now on), 0.1 to 10. It starts at the sample of the event plus the delay and, for clock events, the lead; a new script starts at 1.",
+      "args": [
+        {
+          "name": "ratio",
+          "kind": "number",
+          "min": 0.1,
+          "max": 10,
+          "default": 1,
+          "doc": "factor on the speed of the clock: 2 doubles the tempo, 0.5 halves it; 1 again at every new script"
+        }
+      ],
+      "fields": [
+        {
+          "name": "delayTicks",
+          "kind": "number",
+          "min": 0,
+          "max": 1000000,
+          "default": 0,
+          "doc": "start this many clock ticks after the event (added to delayMs)"
+        },
+        {
+          "name": "delayMs",
+          "kind": "number",
+          "min": 0,
+          "max": 60000,
+          "default": 0,
+          "doc": "start this many milliseconds after the event whose hook calls it"
+        }
+      ]
+    },
+    {
+      "name": "SetResonance",
+      "doc": "Sets the resonance, smoothed over 20 ms. It stays until the next call; a script that does not call it gets 85. Applied at the sample of the event plus the lead (at once for an external event).",
+      "args": [
+        {
+          "name": "percent",
+          "kind": "number",
+          "min": 0,
+          "max": 100,
+          "default": 85,
+          "doc": "resonance as a fraction of self-oscillation at the present frequency: 100 is the edge, the top 10 ring hard and raise the level"
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "SetFilterType",
+      "doc": "Sets the type of the filter (low, band and high pass, notch, phasers; the FilterType constants). It stays until the next call; a script that does not call it gets Lp12.",
+      "args": [
+        {
+          "name": "type",
+          "kind": "integer",
+          "min": 0,
+          "max": 14,
+          "default": 1,
+          "doc": "the pole-mixing preset of the filter",
+          "enum": "FilterType"
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "SetDrift",
+      "doc": "Sets the drift: a slow random wobble added to the frequency, independent of the notes. It stays until the next call; a script that does not call it gets none.",
+      "args": [
+        {
+          "name": "depth",
+          "kind": "number",
+          "min": 0,
+          "max": 12,
+          "default": 0,
+          "doc": "standard deviation of the drift in semitones, 0 switches it off; peaks reach about three times as much"
+        }
+      ],
+      "fields": [
+        {
+          "name": "rate",
+          "kind": "number",
+          "min": 0.05,
+          "max": 20,
+          "default": 1,
+          "doc": "corner frequency of the drift in Hz"
+        }
+      ]
+    },
+    {
+      "name": "SetTimer",
+      "doc": "Starts (or restarts) a timer; its hook OnTimer(id) is called when it is due. The delay is the length of ms and ticks together and is fixed when the timer is set. It counts from the event whose hook sets it.",
+      "args": [
+        {
+          "name": "id",
+          "kind": "integer",
+          "min": 0,
+          "max": 7,
+          "default": 0,
+          "doc": "which timer, 0 to 7"
+        }
+      ],
+      "fields": [
+        {
+          "name": "ms",
+          "kind": "number",
+          "min": 0,
+          "max": 600000,
+          "default": 0,
+          "doc": "delay in milliseconds"
+        },
+        {
+          "name": "ticks",
+          "kind": "number",
+          "min": 0,
+          "max": 100000,
+          "default": 0,
+          "doc": "delay in clock ticks, added to ms (the length of a tick at the present tempo)"
+        },
+        {
+          "name": "repeating",
+          "kind": "flag",
+          "default": false,
+          "doc": "fire again and again after the same delay"
+        }
+      ]
+    },
+    {
+      "name": "StopTimer",
+      "doc": "Stops a timer.",
+      "args": [
+        {
+          "name": "id",
+          "kind": "integer",
+          "min": 0,
+          "max": 7,
+          "default": 0,
+          "doc": "which timer, 0 to 7"
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "GetX",
+      "doc": "The X knob of the plugin, whose meaning the script decides. Returns a number from 0 to 100.",
+      "args": [],
+      "fields": []
+    },
+    {
+      "name": "GetY",
+      "doc": "The Y knob of the plugin, whose meaning the script decides. Returns a number from 0 to 100.",
+      "args": [],
+      "fields": []
+    }
+  ],
+  "hooks": [
+    {
+      "name": "OnStart",
+      "doc": "Runs once after the script is loaded.",
+      "args": []
+    },
+    {
+      "name": "OnStep",
+      "doc": "A step of the clock, as long as the Step setting says (1/16 by default), at the tempo and speed ratio of the moment; step counts from 0 at the start of the clock.",
+      "args": [
+        "step"
+      ]
+    },
+    {
+      "name": "OnNewPitch",
+      "doc": "A note was played into the plugin (one voice, 80 Hz to 1 kHz): about 80 ms after its start, once its pitch has been steady for three readings, and again when the same note is struck anew. note is the nearest MIDI note (69 = A4), hz its frequency, pitch the MIDI note with fractions (cents), periodicity how clearly periodic the sound was, 0 to 1 (1 minus the YIN difference at the period; not a probability), level the RMS of the last 25 ms, linear. The commands it calls are applied at the first block boundary after the note was reported, without the lead of the clock. Called only while the script defines it.",
+      "args": [
+        "note",
+        "hz",
+        "pitch",
+        "periodicity",
+        "level"
+      ]
+    },
+    {
+      "name": "OnPitchEnd",
+      "doc": "The note that was playing has ended (silence or noise for three readings, 60 ms); note is the note that ended. Its commands are applied at the first block boundary, like those of OnNewPitch.",
+      "args": [
+        "note"
+      ]
+    },
+    {
+      "name": "OnControl",
+      "doc": "X or Y was moved (0 to 100 each, both given), at most once per audio block and only on a change. Its commands are applied at the first block boundary, like those of OnNewPitch. GetX() and GetY() give the same values anywhere else. Called only while the script defines it.",
+      "args": [
+        "x",
+        "y"
+      ]
+    },
+    {
+      "name": "OnTick",
+      "doc": "A tick of the tempo clock (while the transport runs); tick counts from 0 at the start.",
+      "args": [
+        "tick"
+      ]
+    },
+    {
+      "name": "OnTransportStart",
+      "doc": "The transport started; the clock begins with tick 0.",
+      "args": []
+    },
+    {
+      "name": "OnTransportStop",
+      "doc": "The transport stopped.",
+      "args": []
+    },
+    {
+      "name": "OnTimer",
+      "doc": "A timer set with SetTimer is due.",
+      "args": [
+        "id"
+      ]
+    }
+  ],
+  "enums": [
+    {
+      "name": "Ticks",
+      "doc": "Lengths of notes in ticks of the clock (96 per quarter note).",
+      "entries": [
+        {
+          "name": "Whole",
+          "value": 384
+        },
+        {
+          "name": "Half",
+          "value": 192
+        },
+        {
+          "name": "Quarter",
+          "value": 96
+        },
+        {
+          "name": "Eighth",
+          "value": 48
+        },
+        {
+          "name": "EighthTriplet",
+          "value": 32
+        },
+        {
+          "name": "Sixteenth",
+          "value": 24
+        },
+        {
+          "name": "SixteenthTriplet",
+          "value": 16
+        },
+        {
+          "name": "ThirtySecond",
+          "value": 12
+        },
+        {
+          "name": "SixtyFourth",
+          "value": 6
+        }
+      ]
+    },
+    {
+      "name": "FilterType",
+      "doc": "Types of the filter, for SetFilterType (the pole-mixing presets of the plugin).",
+      "entries": [
+        {
+          "name": "Lp6",
+          "value": 0
+        },
+        {
+          "name": "Lp12",
+          "value": 1
+        },
+        {
+          "name": "Lp18",
+          "value": 2
+        },
+        {
+          "name": "Lp24",
+          "value": 3
+        },
+        {
+          "name": "Bp6",
+          "value": 4
+        },
+        {
+          "name": "Bp12",
+          "value": 5
+        },
+        {
+          "name": "Hp6",
+          "value": 6
+        },
+        {
+          "name": "Hp12",
+          "value": 7
+        },
+        {
+          "name": "Hp18",
+          "value": 8
+        },
+        {
+          "name": "Hp24",
+          "value": 9
+        },
+        {
+          "name": "Notch",
+          "value": 10
+        },
+        {
+          "name": "NotchOctaves",
+          "value": 11
+        },
+        {
+          "name": "Phaser2",
+          "value": 12
+        },
+        {
+          "name": "Phaser3",
+          "value": 13
+        },
+        {
+          "name": "Phaser4",
+          "value": 14
+        }
+      ]
+    }
+  ],
+  "libraries": [
+    {
+      "import_name": "notes",
+      "global_name": "Notes",
+      "file": "notes.lua",
+      "summary": "the last notes that were played into the plugin, for scripts that build their sequences from them.",
+      "members": [
+        {
+          "name": "size",
+          "kind": "value",
+          "params": null,
+          "method": false,
+          "value": "5",
+          "doc": ""
+        },
+        {
+          "name": "fallback",
+          "kind": "table",
+          "params": null,
+          "method": false,
+          "value": "{57, 60, 62, 64, 67}",
+          "doc": ""
+        },
+        {
+          "name": "list",
+          "kind": "table",
+          "params": null,
+          "method": false,
+          "value": "{}",
+          "doc": ""
+        },
+        {
+          "name": "remember",
+          "kind": "function",
+          "params": [
+            "note"
+          ],
+          "method": false,
+          "value": "",
+          "doc": "an accepted note (OnNewPitch); the same note again is remembered again (a new attack)"
+        },
+        {
+          "name": "played",
+          "kind": "function",
+          "params": [],
+          "method": false,
+          "value": "",
+          "doc": "how many played notes are remembered, 0 to Notes.size"
+        },
+        {
+          "name": "last",
+          "kind": "function",
+          "params": [
+            "i"
+          ],
+          "method": false,
+          "value": "",
+          "doc": "the i-th newest played note (1 = newest), nil if there is none"
+        },
+        {
+          "name": "clear",
+          "kind": "function",
+          "params": [],
+          "method": false,
+          "value": "",
+          "doc": "forget the played notes"
+        },
+        {
+          "name": "window",
+          "kind": "function",
+          "params": [],
+          "method": false,
+          "value": "",
+          "doc": "the notes to build from, oldest first: always Notes.size of them, the played ones preceded by the end of Notes.fallback while fewer than Notes.size were played, so a script sounds from the first step on and turns into the played notes one by one"
+        },
+        {
+          "name": "pitchClasses",
+          "kind": "function",
+          "params": [],
+          "method": false,
+          "value": "",
+          "doc": "the pitch classes (0 = C ... 11 = B) of the window, each once, ascending"
+        },
+        {
+          "name": "has",
+          "kind": "function",
+          "params": [
+            "pitchClass"
+          ],
+          "method": false,
+          "value": "",
+          "doc": "true if the window has a note of this pitch class"
+        },
+        {
+          "name": "intervals",
+          "kind": "function",
+          "params": [
+            "root"
+          ],
+          "method": false,
+          "value": "",
+          "doc": "the distances in semitones above `root` (0 to 11) of the pitch classes of the window, each once, ascending: 0 is the root itself"
+        },
+        {
+          "name": "sequence",
+          "kind": "function",
+          "params": [
+            "length"
+          ],
+          "method": false,
+          "value": "",
+          "doc": "a list of `length` notes: the window, repeated"
+        }
+      ]
+    }
+  ],
+  "examples": [
+    {
+      "id": "01-smallest",
+      "file": "examples/01-smallest.lua",
+      "title": "The smallest script",
+      "summary": "One note per step: OnStep and SetCutoff. Change the note (0 to 127, 69 = A4 = 440 Hz) and hear the filter ring at that pitch. Without a script the plugin has no way to move the frequency, so a call to SetCutoff is the minimum.",
+      "code": "-- The smallest script\n-- One note per step: OnStep and SetCutoff. Change the note (0 to 127, 69 = A4 = 440 Hz) and hear the filter ring at\n-- that pitch. Without a script the plugin has no way to move the frequency, so a call to SetCutoff is the minimum.\nfunction OnStep(step)\n    SetCutoff(57)\nend\n",
+      "uses": [
+        "OnStep",
+        "SetCutoff"
+      ]
+    },
+    {
+      "id": "02-note-list-glide",
+      "file": "examples/02-note-list-glide.lua",
+      "title": "A list of notes with a glide",
+      "summary": "One note per step, taken in turn from a table. Shows step counting from 0 and the glide field (0 jumps, 1 arrives as the step ends). Change the notes, or the glide to 0.5 to arrive half way through each step and then hold.",
+      "code": "-- A list of notes with a glide\n-- One note per step, taken in turn from a table. Shows step counting from 0 and the glide field (0 jumps, 1 arrives\n-- as the step ends). Change the notes, or the glide to 0.5 to arrive half way through each step and then hold.\nlocal notes = { 57, 60, 64, 67, 64, 60 }\n\nfunction OnStart()\n    SetFilterType(FilterType.Lp12)\n    SetResonance(80)\nend\n\nfunction OnStep(step)\n    -- step starts at 0, Lua lists at 1\n    SetCutoff(notes[step % #notes + 1], { glide = 0.7 })\nend\n",
+      "uses": [
+        "OnStart",
+        "SetFilterType",
+        "FilterType",
+        "SetResonance",
+        "OnStep",
+        "SetCutoff"
+      ]
+    },
+    {
+      "id": "03-random-hold",
+      "file": "examples/03-random-hold.lua",
+      "title": "Random hold",
+      "summary": "A random note of a scale on every step. Shows math.random and picking from a list, and X and Y as knobs: X is the glide in percent of the step, Y the resonance. Change the scale and the root.",
+      "code": "-- Random hold\n-- A random note of a scale on every step. Shows math.random and picking from a list, and X and Y as knobs: X is the\n-- glide in percent of the step, Y the resonance. Change the scale and the root.\nlocal scale = { 0, 2, 3, 5, 7, 8, 10 } -- natural minor, in semitones above the root\nlocal root = 45                         -- A2\n\nfunction OnStart()\n    SetFilterType(FilterType.Lp24)\nend\n\nfunction OnControl(x, y)\n    SetResonance(y)\nend\n\nfunction OnStep(step)\n    local degree = math.random(#scale)\n    local octave = math.random(0, 2)\n    SetCutoff(root + scale[degree] + 12 * octave, { glide = math.max(0.01, GetX() / 100) })\nend\n",
+      "uses": [
+        "OnStart",
+        "SetFilterType",
+        "FilterType",
+        "OnControl",
+        "SetResonance",
+        "OnStep",
+        "SetCutoff",
+        "GetX"
+      ]
+    },
+    {
+      "id": "04-speed-timer",
+      "file": "examples/04-speed-timer.lua",
+      "title": "Speed changes on a timer",
+      "summary": "The sequence runs at normal speed for four seconds, then at double speed for two seconds, and so on. Shows SetTimer, OnTimer and SpeedRatio. A timer set while the speed is 2 follows that speed (see SpeedRatio in API.md).",
+      "code": "-- Speed changes on a timer\n-- The sequence runs at normal speed for four seconds, then at double speed for two seconds, and so on. Shows SetTimer,\n-- OnTimer and SpeedRatio. A timer set while the speed is 2 follows that speed (see SpeedRatio in API.md).\nlocal notes = { 52, 55, 59, 62 }\nlocal fast = false\n\nfunction OnStart()\n    SetResonance(75)\n    SetTimer(0, { ms = 4000 })\nend\n\nfunction OnTimer(id)\n    fast = not fast\n    SpeedRatio(fast and 2 or 1)\n    SetTimer(0, { ms = 4000 })\nend\n\nfunction OnStep(step)\n    SetCutoff(notes[step % #notes + 1], { glide = 0.5 })\nend\n",
+      "uses": [
+        "OnStart",
+        "SetResonance",
+        "SetTimer",
+        "OnTimer",
+        "SpeedRatio",
+        "OnStep",
+        "SetCutoff"
+      ]
+    },
+    {
+      "id": "05-follow-played",
+      "file": "examples/05-follow-played.lua",
+      "title": "Follow what is played",
+      "summary": "The filter steps through the notes played into the plugin. Shows OnNewPitch and the factory library \"notes\". Until five notes were played the library's fallback scale is used, and the played notes push it out one by one. Play a few notes into the input and listen.",
+      "code": "-- Follow what is played\n-- The filter steps through the notes played into the plugin. Shows OnNewPitch and the factory library \"notes\". Until\n-- five notes were played the library's fallback scale is used, and the played notes push it out one by one. Play a\n-- few notes into the input and listen.\nimport \"notes\"\n\nfunction OnNewPitch(note, hz, pitch, periodicity, level)\n    Notes.remember(note)\nend\n\nfunction OnStep(step)\n    local window = Notes.window()\n    SetCutoff(window[step % #window + 1], { glide = 0.6 })\nend\n",
+      "uses": [
+        "Notes",
+        "OnNewPitch",
+        "OnStep",
+        "SetCutoff"
+      ]
+    },
+    {
+      "id": "06-transport-reset",
+      "file": "examples/06-transport-reset.lua",
+      "title": "Reset on transport start",
+      "summary": "Every start of the host's transport begins the pattern again at its first note, at normal speed, with a slow drift that stops with the transport. Shows OnTransportStart and OnTransportStop. The script keeps its own position in the pattern, so it can restart it whenever it likes.",
+      "code": "-- Reset on transport start\n-- Every start of the host's transport begins the pattern again at its first note, at normal speed, with a slow drift\n-- that stops with the transport. Shows OnTransportStart and OnTransportStop. The script keeps its own position in the\n-- pattern, so it can restart it whenever it likes.\nlocal notes = { 60, 64, 67, 72 }\nlocal index = 0\n\nfunction OnTransportStart()\n    index = 0\n    SpeedRatio(1)\n    SetDrift(0.5)\nend\n\nfunction OnTransportStop()\n    SetDrift(0)\nend\n\nfunction OnStep(step)\n    SetCutoff(notes[index % #notes + 1], { glide = 0.4 })\n    index = index + 1\nend\n",
+      "uses": [
+        "OnTransportStart",
+        "SpeedRatio",
+        "SetDrift",
+        "OnTransportStop",
+        "OnStep",
+        "SetCutoff"
+      ]
+    }
+  ],
+  "scripts": [
+    {
+      "id": "alternating",
+      "file": "alternating.lua",
+      "title": "A trill: the steps alternate between the lower and the upper part of two octaves around middle C",
+      "summary": "(each a little more than a third of the range), a glide to a random note inside the part. X: glide in percent of the step, 1 to 100 Y: resonance in percent, 0 to 100",
+      "code": "-- A trill: the steps alternate between the lower and the upper part of two octaves around middle C\n-- (each a little more than a third of the range), a glide to a random note inside the part.\n-- X: glide in percent of the step, 1 to 100\n-- Y: resonance in percent, 0 to 100\nlocal low = 48\nlocal high = 72\nlocal part = 0.4 * (high - low)\n\nfunction OnStart()\n    SetFilterType(FilterType.Lp12)\n    SetResonance(GetY())\nend\n\nfunction OnControl(x, y)\n    SetResonance(y)\nend\n\nfunction OnStep(step)\n    local note\n    if step % 2 == 0 then\n        note = low + math.random() * part\n    else\n        note = high - math.random() * part\n    end\n    SetCutoff(note, { glide = math.max(0.01, GetX() / 100) })\nend\n",
+      "uses": [
+        "OnStart",
+        "SetFilterType",
+        "FilterType",
+        "SetResonance",
+        "GetY",
+        "OnControl",
+        "OnStep",
+        "SetCutoff",
+        "GetX"
+      ]
+    },
+    {
+      "id": "answer",
+      "file": "answer.lua",
+      "title": "Answers what is played: the newest note starts a phrase one octave above it that climbs through the pitch classes",
+      "summary": "of the last five notes (see notes.lua) and comes back down, one per step. A new note starts the phrase again from its own pitch at the next step. X: glide in percent of the step, 1 to 100 (50 = half the step) Y: resonance in percent, 0 to 100",
+      "code": "-- Answers what is played: the newest note starts a phrase one octave above it that climbs through the pitch classes\n-- of the last five notes (see notes.lua) and comes back down, one per step. A new note\n-- starts the phrase again from its own pitch at the next step.\n-- X: glide in percent of the step, 1 to 100 (50 = half the step)\n-- Y: resonance in percent, 0 to 100\nimport \"notes\"\n\nfunction OnStart()\n    SetFilterType(FilterType.Lp12)\n    SetResonance(GetY())\nend\n\nfunction OnControl(x, y)\n    SetResonance(y)\nend\n\nlocal position = 0\n\nfunction OnNewPitch(note, hz, pitch, periodicity, level)\n    Notes.remember(note)\n    position = 0\nend\n\nfunction OnStep(step)\n    local root = Notes.last(1) or Notes.fallback[1]\n    local distances = Notes.intervals(root)\n    local count = #distances\n    local period = math.max(1, 2 * count - 2)\n    local k = position % period\n    local index = k < count and k + 1 or period - k + 1\n    SetCutoff(root + 12 + distances[index], { glide = math.max(0.01, GetX() / 100) })\n    position = position + 1\nend\n",
+      "uses": [
+        "Notes",
+        "OnStart",
+        "SetFilterType",
+        "FilterType",
+        "SetResonance",
+        "GetY",
+        "OnControl",
+        "OnNewPitch",
+        "OnStep",
+        "SetCutoff",
+        "GetX"
+      ]
+    },
+    {
+      "id": "echo",
+      "file": "echo.lua",
+      "title": "Echoes what is played: at the first step after a note arrived the filter glides to that very note and stays there until the next note. It starts on the first note of the fallback in notes.lua",
+      "summary": "X: glide in percent of the step, 1 to 100 (20 = a fifth of the step) Y: resonance in percent, 0 to 100",
+      "code": "-- Echoes what is played: at the first step after a note arrived the filter glides to that very note and stays there until the next note. It starts on the first note of the fallback in notes.lua.\n-- X: glide in percent of the step, 1 to 100 (20 = a fifth of the step)\n-- Y: resonance in percent, 0 to 100\nimport \"notes\"\n\nfunction OnStart()\n    SetFilterType(FilterType.Lp12)\n    SetResonance(GetY())\nend\n\nfunction OnControl(x, y)\n    SetResonance(y)\nend\n\nlocal target = Notes.fallback[1]\nlocal fresh = true\n\nfunction OnNewPitch(note, hz, pitch, periodicity, level)\n    Notes.remember(note)\n    target = pitch\n    fresh = true\nend\n\nfunction OnStep(step)\n    if fresh then\n        SetCutoff(target, { glide = math.max(0.01, GetX() / 100) })\n        fresh = false\n    end\nend\n",
+      "uses": [
+        "Notes",
+        "OnStart",
+        "SetFilterType",
+        "FilterType",
+        "SetResonance",
+        "GetY",
+        "OnControl",
+        "OnNewPitch",
+        "OnStep",
+        "SetCutoff",
+        "GetX"
+      ]
+    },
+    {
+      "id": "follow",
+      "file": "follow.lua",
+      "title": "Follows what is played: the filter steps through the last five notes played into the plugin, oldest to newest,",
+      "summary": "one per step. Until five notes were played the sequence begins with the end of the fallback scale of notes.lua, and the played notes push it out one by one. X: glide in percent of the step, 1 to 100 (70 is a flowing line) Y: resonance in percent, 0 to 100",
+      "code": "-- Follows what is played: the filter steps through the last five notes played into the plugin, oldest to newest,\n-- one per step. Until five notes were played the sequence begins with the end of the\n-- fallback scale of notes.lua, and the played notes push it out one by one.\n-- X: glide in percent of the step, 1 to 100 (70 is a flowing line)\n-- Y: resonance in percent, 0 to 100\nimport \"notes\"\n\nfunction OnStart()\n    SetFilterType(FilterType.Lp12)\n    SetResonance(GetY())\nend\n\nfunction OnControl(x, y)\n    SetResonance(y)\nend\n\nfunction OnNewPitch(note, hz, pitch, periodicity, level)\n    Notes.remember(note)\nend\n\nfunction OnStep(step)\n    local window = Notes.window()\n    SetCutoff(window[step % #window + 1], { glide = math.max(0.01, GetX() / 100) })\nend\n",
+      "uses": [
+        "Notes",
+        "OnStart",
+        "SetFilterType",
+        "FilterType",
+        "SetResonance",
+        "GetY",
+        "OnControl",
+        "OnNewPitch",
+        "OnStep",
+        "SetCutoff",
+        "GetX"
+      ]
+    },
+    {
+      "id": "hop",
+      "file": "hop.lua",
+      "title": "Hop: the classic Ship Ahoy. On every step the filter frequency jumps to a random note inside three octaves around",
+      "summary": "1 kHz and glides there; white random (every note of the range is equally likely). X: glide in percent of the step, 1 to 100 (5 = a short glide, 100 = glides all the way to the next step) Y: resonance in percent, 0 to 100 (85 = the classic, above 95 it rings hard)",
+      "code": "-- Hop: the classic Ship Ahoy. On every step the filter frequency jumps to a random note inside three octaves around\n-- 1 kHz and glides there; white random (every note of the range is equally likely).\n-- X: glide in percent of the step, 1 to 100 (5 = a short glide, 100 = glides all the way to the next step)\n-- Y: resonance in percent, 0 to 100 (85 = the classic, above 95 it rings hard)\nlocal centre = 69 + 12 * math.log(1000 / 440, 2) -- 1 kHz as a MIDI note\nlocal range = 36                                 -- three octaves, in semitones\n\nfunction OnStart()\n    SetFilterType(FilterType.Lp12)\n    SetResonance(GetY())\nend\n\nfunction OnControl(x, y)\n    SetResonance(y)\nend\n\nfunction OnStep(step)\n    SetCutoff(centre + (math.random() - 0.5) * range, { glide = math.max(0.01, GetX() / 100) })\nend\n",
+      "uses": [
+        "OnStart",
+        "SetFilterType",
+        "FilterType",
+        "SetResonance",
+        "GetY",
+        "OnControl",
+        "OnStep",
+        "SetCutoff",
+        "GetX"
+      ]
+    },
+    {
+      "id": "random-hold",
+      "file": "random-hold.lua",
+      "title": "Sample and hold: a random note inside two octaves around middle C on every step, a glide to it",
+      "summary": "X: glide in percent of the step, 1 to 100 Y: resonance in percent, 0 to 100",
+      "code": "-- Sample and hold: a random note inside two octaves around middle C on every step, a glide to it.\n-- X: glide in percent of the step, 1 to 100\n-- Y: resonance in percent, 0 to 100\nfunction OnStart()\n    SetFilterType(FilterType.Lp12)\n    SetResonance(GetY())\nend\n\nfunction OnControl(x, y)\n    SetResonance(y)\nend\n\nfunction OnStep(step)\n    SetCutoff(48 + math.random() * 24, { glide = math.max(0.01, GetX() / 100) })\nend\n",
+      "uses": [
+        "OnStart",
+        "SetFilterType",
+        "FilterType",
+        "SetResonance",
+        "GetY",
+        "OnControl",
+        "OnStep",
+        "SetCutoff",
+        "GetX"
+      ]
+    },
+    {
+      "id": "sequence",
+      "file": "sequence.lua",
+      "title": "A fixed sequence of eight notes, one per step",
+      "summary": "The step length is the Step setting, the speed the Tempo knob (or the host's tempo). X: glide in percent of the step, 1 to 100 (70 reaches each note shortly before the next step) Y: resonance in percent, 0 to 100",
+      "code": "-- A fixed sequence of eight notes, one per step.\n-- The step length is the Step setting, the speed the Tempo knob (or the host's tempo).\n-- X: glide in percent of the step, 1 to 100 (70 reaches each note shortly before the next step)\n-- Y: resonance in percent, 0 to 100\nlocal notes = { 57, 60, 64, 67, 64, 60, 62, 59 }\n\nfunction OnStart()\n    SetFilterType(FilterType.Lp12)\n    SetResonance(GetY())\nend\n\nfunction OnControl(x, y)\n    SetResonance(y)\nend\n\nfunction OnStep(step)\n    SetCutoff(notes[step % #notes + 1], { glide = math.max(0.01, GetX() / 100) })\nend\n",
+      "uses": [
+        "OnStart",
+        "SetFilterType",
+        "FilterType",
+        "SetResonance",
+        "GetY",
+        "OnControl",
+        "OnStep",
+        "SetCutoff",
+        "GetX"
+      ]
+    },
+    {
+      "id": "slow-drift",
+      "file": "slow-drift.lua",
+      "title": "Slow drift: a slow wander. On every step the filter frequency moves to a note a little away from the last one",
+      "summary": "(a random walk around 800 Hz, four octaves wide, remembering about ten steps), gliding all the way, with a 24 dB lowpass and a gentle wobble on top. Meant for a slow tempo (30 BPM at 1/16). X: drift depth in percent, 0 to 100 (50 = 1.5 semitones of wobble, 100 = 3) Y: resonance in percent, 0 to 100",
+      "code": "-- Slow drift: a slow wander. On every step the filter frequency moves to a note a little away from the last one\n-- (a random walk around 800 Hz, four octaves wide, remembering about ten steps), gliding all the way, with a\n-- 24 dB lowpass and a gentle wobble on top. Meant for a slow tempo (30 BPM at 1/16).\n-- X: drift depth in percent, 0 to 100 (50 = 1.5 semitones of wobble, 100 = 3)\n-- Y: resonance in percent, 0 to 100\nlocal centre = 69 + 12 * math.log(800 / 440, 2) -- 800 Hz as a MIDI note\nlocal range = 48                                -- four octaves, in semitones\nlocal memory = 0.905                            -- correlation of consecutive steps\nlocal deviation = 0.2                           -- standard deviation of the walk, as a fraction of the range\nlocal state = 0\n\nlocal function gauss()\n    return math.sqrt(-2 * math.log(1 - math.random())) * math.cos(2 * math.pi * math.random())\nend\n\nlocal function wobble(x)\n    SetDrift(x * 0.03, { rate = 0.5 })\nend\n\nfunction OnStart()\n    SetFilterType(FilterType.Lp24)\n    SetResonance(GetY())\n    wobble(GetX())\nend\n\nfunction OnControl(x, y)\n    SetResonance(y)\n    wobble(x)\nend\n\nfunction OnStep(step)\n    state = memory * state + math.sqrt(1 - memory * memory) * gauss()\n    local position = clamp(0.5 + deviation * state, 0, 1)\n    SetCutoff(centre + (position - 0.5) * range, { glide = 1 })\nend\n",
+      "uses": [
+        "SetDrift",
+        "OnStart",
+        "SetFilterType",
+        "FilterType",
+        "SetResonance",
+        "GetY",
+        "GetX",
+        "OnControl",
+        "OnStep",
+        "SetCutoff"
+      ]
+    },
+    {
+      "id": "toggle-trill",
+      "file": "toggle-trill.lua",
+      "title": "Toggle trill: a trill between low and high. The steps alternate between the lower and the upper 40 % of three",
+      "summary": "octaves around 1 kHz, a random note inside the part each time, with a band pass (6 dB). X: glide in percent of the step, 1 to 100 Y: resonance in percent, 0 to 100",
+      "code": "-- Toggle trill: a trill between low and high. The steps alternate between the lower and the upper 40 % of three\n-- octaves around 1 kHz, a random note inside the part each time, with a band pass (6 dB).\n-- X: glide in percent of the step, 1 to 100\n-- Y: resonance in percent, 0 to 100\nlocal centre = 69 + 12 * math.log(1000 / 440, 2) -- 1 kHz as a MIDI note\nlocal range = 36                                 -- three octaves, in semitones\nlocal spread = 0.4                               -- the part of the range a step may land in\nlocal high = false\n\nfunction OnStart()\n    SetFilterType(FilterType.Bp6)\n    SetResonance(GetY())\nend\n\nfunction OnControl(x, y)\n    SetResonance(y)\nend\n\nfunction OnStep(step)\n    high = not high\n    local offset = math.random() * spread\n    local position = high and 1 - offset or offset\n    SetCutoff(centre + (position - 0.5) * range, { glide = math.max(0.01, GetX() / 100) })\nend\n",
+      "uses": [
+        "OnStart",
+        "SetFilterType",
+        "FilterType",
+        "SetResonance",
+        "GetY",
+        "OnControl",
+        "OnStep",
+        "SetCutoff",
+        "GetX"
+      ]
+    }
+  ],
+  "guide": "# Writing a Ship Ahoy script (guide for an AI assistant)\n\nShip Ahoy is a filter that rings like a resonator. It has no way to move on its own: a Lua script decides, step by\nstep, where the frequency goes. This file tells you how to work here. It holds no names, ranges or limits of the API:\nthose are in `API.md` and `constants.lua` next to it, generated from the plugin, and always right. Read them first.\n\n## 1. What a script is, and what is in this folder\n\n- A script is one Lua 5.4 text file. Its top-level code runs once when it is loaded. After that the plugin calls the\n  hooks the script defines (global functions such as `OnStep`), and the script answers by calling commands (global\n  functions such as `SetCutoff`). A hook that is not defined is not called.\n- Commands do not return anything to hear; they tell the plugin what to do and when (the event's time plus an optional\n  delay). The getters (`GetX`, `GetY`) read the two knobs of the plugin.\n- Files here: `API.md` (every command, hook, constant, library and limit), `constants.lua` (the named constants, already\n  global in every script), `examples/` (small scripts that run as they are), and the factory scripts (`hop.lua`,\n  `sequence.lua`, ..., plus the library `notes.lua`). The factory scripts are read only.\n\n## 2. Where a script goes\n\n- On the Dwarf a script is a file `/data/jaypacks/scripts/shipahoy/user-1.lua` up to `user-8.lua`. Reach it with\n  `ssh root@192.168.51.1` and `scp`; the data partition survives a plugin update.\n- Select it with the plugin's Script setting (User 1 to User 8). The factory scripts cannot be edited: to change one, or\n  an example, copy it to a user slot.\n- A script may `import \"notes\"` (a factory library, see `API.md`); it cannot read other files, and `io`, `os`, `require`\n  and `load` do not exist.\n\n## 3. The loop to follow\n\n1. Write the script to a user slot.\n2. The plugin notices the saved file within a second and reloads it. Nothing is restarted.\n3. Read `/data/jaypacks/scripts/shipahoy/user-1.log` (same name as the script, `.log`). It says whether the load worked,\n   the message with the line of an error, the calls that were ignored, and every line the script wrote with `Log(...)`.\n   The plugin's Script status output shows the same in a number (1 ok, 3 compile error, 4 runtime error, 5 over the\n   budget, 6 out of memory).\n4. Fix what the log says and save again.\n\nA script that fails to load (syntax error, error at the top level or in `OnStart`) is rejected and the previous script\nkeeps sounding, so a typo never silences the plugin; but the new script is not running either. Always read the log after\na save. An error in a hook ends only that call; the next event runs again.\n\n## 4. Rules in short\n\n- Hooks are global functions with fixed names and argument lists (`API.md`, Hooks). Write `function OnStep(step)`, not\n  a local.\n- Commands take positional arguments and, last, an optional table of named fields:\n  `SetCutoff(60, { glide = 0.5 })`. A field is written by name; there is no other order.\n- Units: notes are MIDI notes (69 = 440 Hz, fractions are cents); the clock has 96 ticks per quarter note; time\n  fields are in milliseconds (`ms`, `delayMs`) or ticks (`ticks`, `delayTicks`). `GetX()` and `GetY()` give 0 to 100.\n- `step` and `tick` count from 0; a Lua list starts at 1: use `notes[step % #notes + 1]`.\n- `import \"name\"` runs a library once, then its global table is there (`import \"notes\"` gives `Notes`).\n- Randomness is `math.random`; it gives the same numbers on every run. Keep state in locals at the top of the script.\n- Do work in the hook, not in loops that wait: a hook has a small budget of instructions and milliseconds.\n- A number field outside its range is clamped. An integer argument (a timer id, a filter type) outside its range, or not\n  whole, makes the call ignored and is written to the log. A field name the command does not know is ignored and\n  logged. A wrong type or a missing argument is an error in the hook.\n\n## 5. Mistakes seen most\n\nEach line is a message the plugin writes to the log, and the fix.\n\n| Log says | Cause and fix |\n| --- | --- |\n| `SetCutoff: unknown field 'glid' is ignored` | The field is misspelt; take the name from `API.md`. |\n| `SetTimer: 'id' = 9 is outside 0..7, call ignored` | An integer argument out of range; the call did nothing. |\n| `SetTimer: 'id' = 1.5 is not a whole number, call ignored` | An integer argument must be whole: use `math.floor`. |\n| `SetCutoff expects 1 argument(s) and got 0` | A command called without its arguments. |\n| `SetCutoff: the last argument must be a table of fields, not number` | Named fields go in braces: `{ glide = 0.5 }`. |\n| `SetCutoff: 'note' must be a number, not nil` | A variable that is nil, often a list index one past the end (lists start at 1). |\n| attempt to call a nil value (global 'SetCutof') | A misspelt command or hook name. Names are case sensitive. |\n| the script sounds like the previous one | It was rejected at load; the log has the reason. |\n| nothing moves | No hook that calls `SetCutoff` is defined, or the hook name is misspelt (`OnStep`, not `onStep`). |\n\nAlso: `glide` is a fraction of the step (0 to 1), while `GetX()` is a percent (0 to 100): divide by 100.\n\n## 6. The examples\n\n| File | Shows | Uses |\n| --- | --- | --- |\n| `examples/01-smallest.lua` | the smallest script: one note per step | OnStep, SetCutoff |\n| `examples/02-note-list-glide.lua` | a list of notes in turn with a glide | OnStart, OnStep, SetCutoff, SetFilterType, SetResonance |\n| `examples/03-random-hold.lua` | a random note of a scale on every step, X and Y as knobs | OnStart, OnControl, OnStep, GetX, SetCutoff, SetFilterType, SetResonance |\n| `examples/04-speed-timer.lua` | speed changes on a repeating schedule | OnStart, OnTimer, OnStep, SetTimer, SpeedRatio, SetCutoff, SetResonance |\n| `examples/05-follow-played.lua` | the filter follows the notes played into the plugin | OnNewPitch, OnStep, SetCutoff, import \"notes\" |\n| `examples/06-transport-reset.lua` | restart the pattern when the host's transport starts | OnTransportStart, OnTransportStop, OnStep, SetCutoff, SetDrift, SpeedRatio |\n\nStart from the example closest to the task and change it; each was run in the plugin.\n\n## 7. A prompt to start an assistant\n\nPaste this into an assistant started in this folder (or give it the files):\n\n> Read `AGENTS.md`, `API.md`, `constants.lua` and the files in `examples/`. Write a Ship Ahoy script for: (describe the\n> sound you want). Use only commands, hooks and constants that exist in `API.md`. Save it as `user-1.lua`, copy it to\n> `/data/jaypacks/scripts/shipahoy/` on the Dwarf, wait two seconds, read `user-1.log` and fix every problem it names.\n> Tell me what each knob does.\n",
+  "sources": [
+    {
+      "path": "plugins/shipahoy/ShipAhoyScript.h",
+      "sha256": "a9208772683c749090943bf2c7a69df18f55888a3170d599a981ff1cb0363b38"
+    },
+    {
+      "path": "plugins/shipahoy/scripts/AGENTS.md",
+      "sha256": "83dd10543408c3c3e8bfe6b03e14eb37487316d487608361aa547a2b45ad3fb0"
+    },
+    {
+      "path": "plugins/shipahoy/scripts/alternating.lua",
+      "sha256": "85bb60a82612421ab87ad4146d097dbe5332bd42cc64c5415b615365fde8fc10"
+    },
+    {
+      "path": "plugins/shipahoy/scripts/answer.lua",
+      "sha256": "84b851abbaa8135673bbf1e75efe4d3a2bc8a39b952fe477914d6a7b7b0aa956"
+    },
+    {
+      "path": "plugins/shipahoy/scripts/echo.lua",
+      "sha256": "495368b87df5a196ec4c074738ad541b730437d399d9bb6a2a2113fc22b81510"
+    },
+    {
+      "path": "plugins/shipahoy/scripts/examples/01-smallest.lua",
+      "sha256": "94c719d2e09150501354eb7327418dfda04cb5d16554416f02c284508d58e50f"
+    },
+    {
+      "path": "plugins/shipahoy/scripts/examples/02-note-list-glide.lua",
+      "sha256": "9806a2308d38224d6b77c9f11b848f5bc42fb34c38d6c918b0a08475765d2475"
+    },
+    {
+      "path": "plugins/shipahoy/scripts/examples/03-random-hold.lua",
+      "sha256": "fb6b67b7efc7377e065c8d70259b3165d65b478d63ab8b1c4346480948979c4c"
+    },
+    {
+      "path": "plugins/shipahoy/scripts/examples/04-speed-timer.lua",
+      "sha256": "43b80a46236e394f5d0b4711556938107f33a5ab63571cb0a3944346f6f9ca25"
+    },
+    {
+      "path": "plugins/shipahoy/scripts/examples/05-follow-played.lua",
+      "sha256": "682f4c2ef6851916e94df671274cf4ddee2e97c4985e6ede22d85073ce766854"
+    },
+    {
+      "path": "plugins/shipahoy/scripts/examples/06-transport-reset.lua",
+      "sha256": "75d8b7a0ecedd0fae927b30e2a25eb01d1f852b821cb8c1c77c0de53041b8cc4"
+    },
+    {
+      "path": "plugins/shipahoy/scripts/follow.lua",
+      "sha256": "97aa4fb64d05457a94eb2487525e84fe998965e451b42555915a4c2a6430bf2f"
+    },
+    {
+      "path": "plugins/shipahoy/scripts/hop.lua",
+      "sha256": "71448b275d016be561c6be42544c66c44627c77579ab4d307ead54b11e6cfe79"
+    },
+    {
+      "path": "plugins/shipahoy/scripts/notes.lua",
+      "sha256": "9b20e4f71e0820bb76c299dc4db046063c33303aa67d937ad72a4cd47b533707"
+    },
+    {
+      "path": "plugins/shipahoy/scripts/random-hold.lua",
+      "sha256": "baf65c82ebf1255da5d023339f2c68c5bc26838b0fb4a600c1f6f4725ad4f142"
+    },
+    {
+      "path": "plugins/shipahoy/scripts/sequence.lua",
+      "sha256": "cb946f614798d8d7637040e01ad366827f682c651b21d63735ff04a464015441"
+    },
+    {
+      "path": "plugins/shipahoy/scripts/slow-drift.lua",
+      "sha256": "b3ad6efe827e60b054c9f7e2d48e64fe622b01ae3dedb211f11ab13b35b64fe8"
+    },
+    {
+      "path": "plugins/shipahoy/scripts/toggle-trill.lua",
+      "sha256": "a579543252b225efbbd7cb1cc6eb9d77e903d44b1179f70fdb3b71aef5ded7ff"
+    },
+    {
+      "path": "scripting/ApiDescription.cpp",
+      "sha256": "dbe66a8db60401ea5b8978640315e3ab7ba35caea79f926977bc6c39fb7982eb"
+    },
+    {
+      "path": "scripting/Binding.h",
+      "sha256": "0f73e831508308beda0c4afb2911145a5975f165ccfe30f8b7a8a00754f9801f"
+    },
+    {
+      "path": "scripting/LuaRuntime.cpp",
+      "sha256": "2bbfe5762b5750627f55d017932aea93de3c5b4b6d1ee3801d49d84c7d0013d5"
+    },
+    {
+      "path": "scripting/LuaRuntime.h",
+      "sha256": "596b0a665922d9b1a13ad62baee1779bf4bbefe806f93aac0e5312271bd5a1a8"
+    },
+    {
+      "path": "scripting/ScriptHost.h",
+      "sha256": "16dd3333179e88f637bb26a28e9e3f08262985253c23859c2dbf33bc8f1f5f86"
+    },
+    {
+      "path": "scripting/Timers.h",
+      "sha256": "f0762a73f40b0a39580f7656700ee4547c772eb072a3a840284694b32f537d7b"
+    },
+    {
+      "path": "third_party/lua/lua.h",
+      "sha256": "3b77329f9deed929a5cbe7a7d5fc81ebbb63fd869a49e0a9302fe9240caf1930"
+    }
+  ]
+}

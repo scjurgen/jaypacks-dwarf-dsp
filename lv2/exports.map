@@ -1,0 +1,7 @@
+/* Symbols a plugin binary exports on Linux (the Dwarf): only the LV2 entry point. Hidden
+   visibility does not cover std:: templates the compiler emits out of line (libstdc++
+   declares them with default visibility); this version script makes them local. */
+{
+    global: lv2_descriptor;
+    local: *;
+};

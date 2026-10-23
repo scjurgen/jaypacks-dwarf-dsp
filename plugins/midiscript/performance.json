@@ -1,0 +1,58 @@
+{
+  "plugin": "midiscript",
+  "version": "0.1.0",
+  "date": "2026-10-18",
+  "commit": "2552992+changes",
+  "device": {
+    "firmware": "MOD OS v1.13.5.3315",
+    "jack": "48000 Hz, 128 frames"
+  },
+  "source": "MIDI notes from the ALSA sequencer (see the settings)",
+  "cycles": 3,
+  "window_s": 6.0,
+  "cpu_points": [
+    {
+      "settings": "idle (no note)",
+      "median": 0.63,
+      "min": 0.53,
+      "max": 0.65
+    },
+    {
+      "settings": "Arpeggiator, 3 keys held",
+      "median": 3.42,
+      "min": 3.22,
+      "max": 3.68
+    },
+    {
+      "settings": "Arpeggiator, 8 keys held",
+      "median": 3.27,
+      "min": 3.2,
+      "max": 3.4
+    },
+    {
+      "settings": "Chord Player, 8 keys",
+      "median": 0.93,
+      "min": 0.53,
+      "max": 1.08
+    },
+    {
+      "settings": "Scale Quantiser, 8 keys",
+      "median": 0.52,
+      "min": 0.43,
+      "max": 0.72
+    },
+    {
+      "settings": "Octave Doubler, 8 keys",
+      "median": 0.93,
+      "min": 0.85,
+      "max": 1.25
+    }
+  ],
+  "memory_kb": {
+    "allocated": 49.8,
+    "peak": 50.6,
+    "counted": "2026-10-18",
+    "binary": 363
+  },
+  "xruns": 0
+}

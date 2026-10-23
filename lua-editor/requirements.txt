@@ -1,0 +1,8 @@
+# Python packages for lua-editor, installed into the repository venv .venv:
+#   .venv/bin/pip install -r lua-editor/requirements.txt
+# (the repository's own requirements.txt is for charts and modgui images only).
+PySide6==6.12.0
+lupa==2.8
+paramiko==5.1.0
+pytest==9.1.1
+pytest-qt==4.5.0

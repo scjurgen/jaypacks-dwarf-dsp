@@ -1,0 +1,1131 @@
+{
+  "schema": 1,
+  "plugin": "midiscript",
+  "title": "MIDI Script",
+  "lua": "5.4.8",
+  "limits": {
+    "textMaxLength": 31,
+    "scriptMaxBytes": 262144,
+    "memoryBytes": 1048576,
+    "handlerInstructions": 100000,
+    "loadInstructions": 2000000,
+    "handlerMillis": 20,
+    "loadMillis": 250
+  },
+  "sandbox": {
+    "libraries": [
+      "base",
+      "math",
+      "table",
+      "string"
+    ],
+    "removedGlobals": [
+      "dofile",
+      "loadfile",
+      "load",
+      "collectgarbage",
+      "warn",
+      "print"
+    ],
+    "removedFields": {
+      "string": [
+        "dump"
+      ]
+    },
+    "runtimeGlobals": [
+      "Log",
+      "print",
+      "clamp",
+      "lerp",
+      "import"
+    ]
+  },
+  "noopImports": [
+    "constants"
+  ],
+  "commands": [
+    {
+      "name": "Note",
+      "doc": "Sends a note on and, one length later, its note off. The note off is certain: it goes out even if the script is replaced or fails in between.",
+      "args": [
+        {
+          "name": "channel",
+          "kind": "integer",
+          "min": 1,
+          "max": 16,
+          "default": 1,
+          "doc": "MIDI channel 1 to 16"
+        },
+        {
+          "name": "note",
+          "kind": "integer",
+          "min": 0,
+          "max": 127,
+          "default": 60,
+          "doc": "MIDI note number (60 = middle C)"
+        },
+        {
+          "name": "velocity",
+          "kind": "integer",
+          "min": 1,
+          "max": 127,
+          "default": 100,
+          "doc": "velocity 1 to 127"
+        }
+      ],
+      "fields": [
+        {
+          "name": "delayMs",
+          "kind": "number",
+          "min": 0,
+          "max": 60000,
+          "default": 0,
+          "doc": "send this many milliseconds after the event whose hook calls it"
+        },
+        {
+          "name": "delayTicks",
+          "kind": "number",
+          "min": 0,
+          "max": 96000,
+          "default": 0,
+          "doc": "send this many clock ticks after the event (added to delayMs)"
+        },
+        {
+          "name": "lengthMs",
+          "kind": "number",
+          "min": 0,
+          "max": 60000,
+          "default": 0,
+          "doc": "how long the note sounds, in milliseconds"
+        },
+        {
+          "name": "lengthTicks",
+          "kind": "number",
+          "min": 0,
+          "max": 96000,
+          "default": 0,
+          "doc": "how long the note sounds, in ticks (added to lengthMs); with both 0 the note sounds for one tick"
+        }
+      ]
+    },
+    {
+      "name": "NoteOn",
+      "doc": "Sends a note on.",
+      "args": [
+        {
+          "name": "channel",
+          "kind": "integer",
+          "min": 1,
+          "max": 16,
+          "default": 1,
+          "doc": "MIDI channel 1 to 16"
+        },
+        {
+          "name": "note",
+          "kind": "integer",
+          "min": 0,
+          "max": 127,
+          "default": 60,
+          "doc": "MIDI note number (60 = middle C)"
+        },
+        {
+          "name": "velocity",
+          "kind": "integer",
+          "min": 1,
+          "max": 127,
+          "default": 100,
+          "doc": "velocity 1 to 127"
+        }
+      ],
+      "fields": [
+        {
+          "name": "delayMs",
+          "kind": "number",
+          "min": 0,
+          "max": 60000,
+          "default": 0,
+          "doc": "send this many milliseconds after the event whose hook calls it"
+        },
+        {
+          "name": "delayTicks",
+          "kind": "number",
+          "min": 0,
+          "max": 96000,
+          "default": 0,
+          "doc": "send this many clock ticks after the event (added to delayMs)"
+        }
+      ]
+    },
+    {
+      "name": "NoteOff",
+      "doc": "Sends a note off.",
+      "args": [
+        {
+          "name": "channel",
+          "kind": "integer",
+          "min": 1,
+          "max": 16,
+          "default": 1,
+          "doc": "MIDI channel 1 to 16"
+        },
+        {
+          "name": "note",
+          "kind": "integer",
+          "min": 0,
+          "max": 127,
+          "default": 60,
+          "doc": "MIDI note number"
+        }
+      ],
+      "fields": [
+        {
+          "name": "delayMs",
+          "kind": "number",
+          "min": 0,
+          "max": 60000,
+          "default": 0,
+          "doc": "send this many milliseconds after the event whose hook calls it"
+        },
+        {
+          "name": "delayTicks",
+          "kind": "number",
+          "min": 0,
+          "max": 96000,
+          "default": 0,
+          "doc": "send this many clock ticks after the event (added to delayMs)"
+        }
+      ]
+    },
+    {
+      "name": "CC",
+      "doc": "Sends a control change.",
+      "args": [
+        {
+          "name": "channel",
+          "kind": "integer",
+          "min": 1,
+          "max": 16,
+          "default": 1,
+          "doc": "MIDI channel 1 to 16"
+        },
+        {
+          "name": "controller",
+          "kind": "integer",
+          "min": 0,
+          "max": 127,
+          "default": 0,
+          "doc": "controller number"
+        },
+        {
+          "name": "value",
+          "kind": "integer",
+          "min": 0,
+          "max": 127,
+          "default": 0,
+          "doc": "controller value"
+        }
+      ],
+      "fields": [
+        {
+          "name": "delayMs",
+          "kind": "number",
+          "min": 0,
+          "max": 60000,
+          "default": 0,
+          "doc": "send this many milliseconds after the event whose hook calls it"
+        },
+        {
+          "name": "delayTicks",
+          "kind": "number",
+          "min": 0,
+          "max": 96000,
+          "default": 0,
+          "doc": "send this many clock ticks after the event (added to delayMs)"
+        }
+      ]
+    },
+    {
+      "name": "PitchBend",
+      "doc": "Sends a pitch bend.",
+      "args": [
+        {
+          "name": "channel",
+          "kind": "integer",
+          "min": 1,
+          "max": 16,
+          "default": 1,
+          "doc": "MIDI channel 1 to 16"
+        },
+        {
+          "name": "value",
+          "kind": "integer",
+          "min": -8192,
+          "max": 8191,
+          "default": 0,
+          "doc": "pitch bend, 0 is the centre"
+        }
+      ],
+      "fields": [
+        {
+          "name": "delayMs",
+          "kind": "number",
+          "min": 0,
+          "max": 60000,
+          "default": 0,
+          "doc": "send this many milliseconds after the event whose hook calls it"
+        },
+        {
+          "name": "delayTicks",
+          "kind": "number",
+          "min": 0,
+          "max": 96000,
+          "default": 0,
+          "doc": "send this many clock ticks after the event (added to delayMs)"
+        }
+      ]
+    },
+    {
+      "name": "ProgramChange",
+      "doc": "Sends a program change.",
+      "args": [
+        {
+          "name": "channel",
+          "kind": "integer",
+          "min": 1,
+          "max": 16,
+          "default": 1,
+          "doc": "MIDI channel 1 to 16"
+        },
+        {
+          "name": "program",
+          "kind": "integer",
+          "min": 0,
+          "max": 127,
+          "default": 0,
+          "doc": "program number 0 to 127"
+        }
+      ],
+      "fields": [
+        {
+          "name": "delayMs",
+          "kind": "number",
+          "min": 0,
+          "max": 60000,
+          "default": 0,
+          "doc": "send this many milliseconds after the event whose hook calls it"
+        },
+        {
+          "name": "delayTicks",
+          "kind": "number",
+          "min": 0,
+          "max": 96000,
+          "default": 0,
+          "doc": "send this many clock ticks after the event (added to delayMs)"
+        }
+      ]
+    },
+    {
+      "name": "Pass",
+      "doc": "Sends the message of the event being handled on, unchanged. Only inside OnNoteOn, OnNoteOff, OnCC, OnPitchBend, OnProgramChange and OnOther.",
+      "args": [],
+      "fields": [
+        {
+          "name": "delayMs",
+          "kind": "number",
+          "min": 0,
+          "max": 60000,
+          "default": 0,
+          "doc": "send this many milliseconds after the event whose hook calls it"
+        },
+        {
+          "name": "delayTicks",
+          "kind": "number",
+          "min": 0,
+          "max": 96000,
+          "default": 0,
+          "doc": "send this many clock ticks after the event (added to delayMs)"
+        }
+      ]
+    },
+    {
+      "name": "Panic",
+      "doc": "Ends every sounding note now, drops everything that was waiting and sends All Notes Off on all channels.",
+      "args": [],
+      "fields": []
+    },
+    {
+      "name": "SetTimer",
+      "doc": "Starts (or restarts) a timer; its hook OnTimer(id) is called when it is due. The delay is the length of ms and ticks together and is fixed when the timer is set. It counts from the event whose hook sets it.",
+      "args": [
+        {
+          "name": "id",
+          "kind": "integer",
+          "min": 0,
+          "max": 7,
+          "default": 0,
+          "doc": "which timer, 0 to 7"
+        }
+      ],
+      "fields": [
+        {
+          "name": "ms",
+          "kind": "number",
+          "min": 0,
+          "max": 600000,
+          "default": 0,
+          "doc": "delay in milliseconds"
+        },
+        {
+          "name": "ticks",
+          "kind": "number",
+          "min": 0,
+          "max": 100000,
+          "default": 0,
+          "doc": "delay in clock ticks, added to ms (the length of a tick at the present tempo)"
+        },
+        {
+          "name": "repeating",
+          "kind": "flag",
+          "default": false,
+          "doc": "fire again and again after the same delay"
+        }
+      ]
+    },
+    {
+      "name": "StopTimer",
+      "doc": "Stops a timer.",
+      "args": [
+        {
+          "name": "id",
+          "kind": "integer",
+          "min": 0,
+          "max": 7,
+          "default": 0,
+          "doc": "which timer, 0 to 7"
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "hooks": [
+    {
+      "name": "OnStart",
+      "doc": "Runs once after the script is loaded.",
+      "args": []
+    },
+    {
+      "name": "OnNoteOn",
+      "doc": "A note on arrived. Channels count from 1.",
+      "args": [
+        "channel",
+        "note",
+        "velocity"
+      ]
+    },
+    {
+      "name": "OnNoteOff",
+      "doc": "A note off arrived (or a note on with velocity 0, then velocity is 0).",
+      "args": [
+        "channel",
+        "note",
+        "velocity"
+      ]
+    },
+    {
+      "name": "OnCC",
+      "doc": "A control change arrived.",
+      "args": [
+        "channel",
+        "controller",
+        "value"
+      ]
+    },
+    {
+      "name": "OnPitchBend",
+      "doc": "A pitch bend arrived; value is -8192 to 8191.",
+      "args": [
+        "channel",
+        "value"
+      ]
+    },
+    {
+      "name": "OnProgramChange",
+      "doc": "A program change arrived.",
+      "args": [
+        "channel",
+        "program"
+      ]
+    },
+    {
+      "name": "OnOther",
+      "doc": "Any other message of 1 to 3 bytes except the real-time messages (channel pressure, poly pressure, song position ...): the status byte and the two data bytes (0 when absent).",
+      "args": [
+        "status",
+        "data1",
+        "data2"
+      ]
+    },
+    {
+      "name": "OnTick",
+      "doc": "A tick of the tempo clock (while the transport runs); tick counts from 0 at the start.",
+      "args": [
+        "tick"
+      ]
+    },
+    {
+      "name": "OnTransportStart",
+      "doc": "The transport started; the clock begins with tick 0.",
+      "args": []
+    },
+    {
+      "name": "OnTransportStop",
+      "doc": "The transport stopped.",
+      "args": []
+    },
+    {
+      "name": "OnTimer",
+      "doc": "A timer set with SetTimer is due.",
+      "args": [
+        "id"
+      ]
+    }
+  ],
+  "enums": [
+    {
+      "name": "Ticks",
+      "doc": "Lengths of notes in ticks of the clock (24 per quarter note).",
+      "entries": [
+        {
+          "name": "Whole",
+          "value": 96
+        },
+        {
+          "name": "Half",
+          "value": 48
+        },
+        {
+          "name": "Quarter",
+          "value": 24
+        },
+        {
+          "name": "Eighth",
+          "value": 12
+        },
+        {
+          "name": "EighthTriplet",
+          "value": 8
+        },
+        {
+          "name": "Sixteenth",
+          "value": 6
+        },
+        {
+          "name": "SixteenthTriplet",
+          "value": 4
+        },
+        {
+          "name": "ThirtySecond",
+          "value": 3
+        }
+      ]
+    }
+  ],
+  "libraries": [
+    {
+      "import_name": "chords",
+      "global_name": "Chords",
+      "file": "chords.lua",
+      "summary": "chord shapes as lists of semitones above the root.",
+      "members": [
+        {
+          "name": "Major",
+          "kind": "table",
+          "params": null,
+          "method": false,
+          "value": "{0, 4, 7}",
+          "doc": "the shapes"
+        },
+        {
+          "name": "Minor",
+          "kind": "table",
+          "params": null,
+          "method": false,
+          "value": "{0, 3, 7}",
+          "doc": "the shapes"
+        },
+        {
+          "name": "Diminished",
+          "kind": "table",
+          "params": null,
+          "method": false,
+          "value": "{0, 3, 6}",
+          "doc": "the shapes"
+        },
+        {
+          "name": "Augmented",
+          "kind": "table",
+          "params": null,
+          "method": false,
+          "value": "{0, 4, 8}",
+          "doc": "the shapes"
+        },
+        {
+          "name": "Sus2",
+          "kind": "table",
+          "params": null,
+          "method": false,
+          "value": "{0, 2, 7}",
+          "doc": "the shapes"
+        },
+        {
+          "name": "Sus4",
+          "kind": "table",
+          "params": null,
+          "method": false,
+          "value": "{0, 5, 7}",
+          "doc": "the shapes"
+        },
+        {
+          "name": "Major7",
+          "kind": "table",
+          "params": null,
+          "method": false,
+          "value": "{0, 4, 7, 11}",
+          "doc": "the shapes"
+        },
+        {
+          "name": "Minor7",
+          "kind": "table",
+          "params": null,
+          "method": false,
+          "value": "{0, 3, 7, 10}",
+          "doc": "the shapes"
+        },
+        {
+          "name": "Dominant7",
+          "kind": "table",
+          "params": null,
+          "method": false,
+          "value": "{0, 4, 7, 10}",
+          "doc": "the shapes"
+        },
+        {
+          "name": "Major9",
+          "kind": "table",
+          "params": null,
+          "method": false,
+          "value": "{0, 4, 7, 11, 14}",
+          "doc": "the shapes"
+        },
+        {
+          "name": "Minor9",
+          "kind": "table",
+          "params": null,
+          "method": false,
+          "value": "{0, 3, 7, 10, 14}",
+          "doc": "the shapes"
+        },
+        {
+          "name": "Power",
+          "kind": "table",
+          "params": null,
+          "method": false,
+          "value": "{0, 7, 12}",
+          "doc": "the shapes"
+        },
+        {
+          "name": "notes",
+          "kind": "function",
+          "params": [
+            "root",
+            "shape"
+          ],
+          "method": false,
+          "value": "",
+          "doc": "the MIDI notes of the chord, those above 127 left out"
+        },
+        {
+          "name": "invert",
+          "kind": "function",
+          "params": [
+            "notes",
+            "times"
+          ],
+          "method": false,
+          "value": "",
+          "doc": "the chord with the lowest note moved up an octave, `times` times"
+        }
+      ]
+    },
+    {
+      "import_name": "rhythm",
+      "global_name": "Rhythm",
+      "file": "rhythm.lua",
+      "summary": "helpers for steps on the clock (24 ticks per quarter note).",
+      "members": [
+        {
+          "name": "swing",
+          "kind": "function",
+          "params": [
+            "step",
+            "amount",
+            "stepTicks"
+          ],
+          "method": false,
+          "value": "",
+          "doc": "ticks to delay step number `step` (counting from 0): the odd steps are pushed back by amount (0 to 0.5) of a step"
+        },
+        {
+          "name": "euclid",
+          "kind": "function",
+          "params": [
+            "pulses",
+            "steps"
+          ],
+          "method": false,
+          "value": "",
+          "doc": "a list of `steps` booleans with `pulses` of them true, spread evenly"
+        }
+      ]
+    },
+    {
+      "import_name": "scales",
+      "global_name": "Scales",
+      "file": "scales.lua",
+      "summary": "scale shapes as lists of semitones above the root, and the nearest note of a scale.",
+      "members": [
+        {
+          "name": "Chromatic",
+          "kind": "table",
+          "params": null,
+          "method": false,
+          "value": "{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}",
+          "doc": "the shapes"
+        },
+        {
+          "name": "Major",
+          "kind": "table",
+          "params": null,
+          "method": false,
+          "value": "{0, 2, 4, 5, 7, 9, 11}",
+          "doc": "the shapes"
+        },
+        {
+          "name": "Minor",
+          "kind": "table",
+          "params": null,
+          "method": false,
+          "value": "{0, 2, 3, 5, 7, 8, 10}",
+          "doc": "the shapes"
+        },
+        {
+          "name": "HarmonicMinor",
+          "kind": "table",
+          "params": null,
+          "method": false,
+          "value": "{0, 2, 3, 5, 7, 8, 11}",
+          "doc": "the shapes"
+        },
+        {
+          "name": "Dorian",
+          "kind": "table",
+          "params": null,
+          "method": false,
+          "value": "{0, 2, 3, 5, 7, 9, 10}",
+          "doc": "the shapes"
+        },
+        {
+          "name": "Phrygian",
+          "kind": "table",
+          "params": null,
+          "method": false,
+          "value": "{0, 1, 3, 5, 7, 8, 10}",
+          "doc": "the shapes"
+        },
+        {
+          "name": "Lydian",
+          "kind": "table",
+          "params": null,
+          "method": false,
+          "value": "{0, 2, 4, 6, 7, 9, 11}",
+          "doc": "the shapes"
+        },
+        {
+          "name": "Mixolydian",
+          "kind": "table",
+          "params": null,
+          "method": false,
+          "value": "{0, 2, 4, 5, 7, 9, 10}",
+          "doc": "the shapes"
+        },
+        {
+          "name": "PentatonicMajor",
+          "kind": "table",
+          "params": null,
+          "method": false,
+          "value": "{0, 2, 4, 7, 9}",
+          "doc": "the shapes"
+        },
+        {
+          "name": "PentatonicMinor",
+          "kind": "table",
+          "params": null,
+          "method": false,
+          "value": "{0, 3, 5, 7, 10}",
+          "doc": "the shapes"
+        },
+        {
+          "name": "Blues",
+          "kind": "table",
+          "params": null,
+          "method": false,
+          "value": "{0, 3, 5, 6, 7, 10}",
+          "doc": "the shapes"
+        },
+        {
+          "name": "WholeTone",
+          "kind": "table",
+          "params": null,
+          "method": false,
+          "value": "{0, 2, 4, 6, 8, 10}",
+          "doc": "the shapes"
+        },
+        {
+          "name": "contains",
+          "kind": "function",
+          "params": [
+            "note",
+            "root",
+            "shape"
+          ],
+          "method": false,
+          "value": "",
+          "doc": "true if `note` is in the scale"
+        },
+        {
+          "name": "quantise",
+          "kind": "function",
+          "params": [
+            "note",
+            "root",
+            "shape"
+          ],
+          "method": false,
+          "value": "",
+          "doc": "the note of the scale nearest to `note` (a tie goes down)"
+        }
+      ]
+    }
+  ],
+  "examples": [
+    {
+      "id": "01-pass-through",
+      "file": "examples/01-pass-through.lua",
+      "title": "Pass everything through",
+      "summary": "Every message goes on unchanged. Shows that a message only goes on when its hook calls Pass(): a message without a hook (for example MIDI clock) is dropped. Start from this one when a script should change only some messages, and remove the Pass() of the kind you want to handle yourself.",
+      "code": "-- Pass everything through\n-- Every message goes on unchanged. Shows that a message only goes on when its hook calls Pass(): a message without a\n-- hook (for example MIDI clock) is dropped. Start from this one when a script should change only some messages, and\n-- remove the Pass() of the kind you want to handle yourself.\nfunction OnNoteOn(channel, note, velocity) Pass() end\nfunction OnNoteOff(channel, note, velocity) Pass() end\nfunction OnCC(channel, controller, value) Pass() end\nfunction OnPitchBend(channel, value) Pass() end\nfunction OnProgramChange(channel, program) Pass() end\nfunction OnOther(status, data1, data2) Pass() end\n",
+      "uses": [
+        "OnNoteOn",
+        "Pass",
+        "OnNoteOff",
+        "OnCC",
+        "OnPitchBend",
+        "OnProgramChange",
+        "OnOther"
+      ]
+    },
+    {
+      "id": "02-transpose",
+      "file": "examples/02-transpose.lua",
+      "title": "Transpose",
+      "summary": "Every note is moved up by a number of semitones (negative moves it down). The note off has to go to the same note as its note on, even if the setting changed in between, so the script remembers what it sent. Change the shift.",
+      "code": "-- Transpose\n-- Every note is moved up by a number of semitones (negative moves it down). The note off has to go to the same note as\n-- its note on, even if the setting changed in between, so the script remembers what it sent. Change the shift.\nlocal shift = 7\n\nlocal sent = {} -- [channel][note] = the note that went out for this key\n\nfunction OnNoteOn(channel, note, velocity)\n    local out = clamp(note + shift, 0, 127)\n    sent[channel] = sent[channel] or {}\n    sent[channel][note] = out\n    NoteOn(channel, out, velocity)\nend\n\nfunction OnNoteOff(channel, note, velocity)\n    local out = sent[channel] and sent[channel][note]\n    if out then\n        sent[channel][note] = nil\n        NoteOff(channel, out)\n    end\nend\n\nfunction OnCC(channel, controller, value) Pass() end\nfunction OnPitchBend(channel, value) Pass() end\n",
+      "uses": [
+        "OnNoteOn",
+        "NoteOn",
+        "OnNoteOff",
+        "NoteOff",
+        "OnCC",
+        "Pass",
+        "OnPitchBend"
+      ]
+    },
+    {
+      "id": "03-chord-from-one-note",
+      "file": "examples/03-chord-from-one-note.lua",
+      "title": "A chord from one note",
+      "summary": "Every key sounds a minor seventh chord on top of it, strummed 15 ms apart. Shows the library \"chords\" and the delayMs field. The note off is strummed the same way, so a short key press cannot end a note before it began. Change the shape (Chords.Major, Chords.Sus4 ...) or the strum.",
+      "code": "-- A chord from one note\n-- Every key sounds a minor seventh chord on top of it, strummed 15 ms apart. Shows the library \"chords\" and the delayMs\n-- field. The note off is strummed the same way, so a short key press cannot end a note before it began. Change the\n-- shape (Chords.Major, Chords.Sus4 ...) or the strum.\nimport \"chords\"\n\nlocal shape = Chords.Minor7\nlocal strumMs = 15\n\nlocal sounding = {} -- [channel][note] = the notes that this key switched on\n\nfunction OnNoteOn(channel, note, velocity)\n    local notes = Chords.notes(note, shape)\n    sounding[channel] = sounding[channel] or {}\n    sounding[channel][note] = notes\n    for i, chordNote in ipairs(notes) do\n        NoteOn(channel, chordNote, velocity, { delayMs = (i - 1) * strumMs })\n    end\nend\n\nfunction OnNoteOff(channel, note, velocity)\n    local notes = sounding[channel] and sounding[channel][note]\n    if notes then\n        sounding[channel][note] = nil\n        for i, chordNote in ipairs(notes) do\n            NoteOff(channel, chordNote, { delayMs = (i - 1) * strumMs })\n        end\n    end\nend\n",
+      "uses": [
+        "Chords",
+        "OnNoteOn",
+        "NoteOn",
+        "OnNoteOff",
+        "NoteOff"
+      ]
+    },
+    {
+      "id": "04-remap-a-controller",
+      "file": "examples/04-remap-a-controller.lua",
+      "title": "Remap a controller",
+      "summary": "The mod wheel (CC 1) is sent as CC 74 (brightness), halved; all other controllers go through. Shows CC and Pass in one hook. Change the numbers, or the factor, to move any controller to another one.",
+      "code": "-- Remap a controller\n-- The mod wheel (CC 1) is sent as CC 74 (brightness), halved; all other controllers go through. Shows CC and Pass in\n-- one hook. Change the numbers, or the factor, to move any controller to another one.\nlocal from, to, factor = 1, 74, 0.5\n\nfunction OnCC(channel, controller, value)\n    if controller == from then\n        CC(channel, to, math.floor(value * factor + 0.5))\n    else\n        Pass()\n    end\nend\n",
+      "uses": [
+        "OnCC",
+        "CC",
+        "Pass"
+      ]
+    },
+    {
+      "id": "05-quantise-to-a-scale",
+      "file": "examples/05-quantise-to-a-scale.lua",
+      "title": "Quantise to a scale",
+      "summary": "Every note is moved to the nearest note of D dorian (a tie goes down). Shows the library \"scales\". The note off goes to the note that the note on went to. Change the root (0 = C ... 11 = B) and the shape (Scales.Blues ...).",
+      "code": "-- Quantise to a scale\n-- Every note is moved to the nearest note of D dorian (a tie goes down). Shows the library \"scales\". The note off goes\n-- to the note that the note on went to. Change the root (0 = C ... 11 = B) and the shape (Scales.Blues ...).\nimport \"scales\"\n\nlocal root = 2\nlocal shape = Scales.Dorian\n\nlocal played = {} -- [channel][note] = the note that went out\n\nfunction OnNoteOn(channel, note, velocity)\n    local out = Scales.quantise(note, root, shape)\n    played[channel] = played[channel] or {}\n    played[channel][note] = out\n    NoteOn(channel, out, velocity)\nend\n\nfunction OnNoteOff(channel, note, velocity)\n    local out = played[channel] and played[channel][note]\n    if out then\n        played[channel][note] = nil\n        NoteOff(channel, out)\n    end\nend\n",
+      "uses": [
+        "Scales",
+        "OnNoteOn",
+        "NoteOn",
+        "OnNoteOff",
+        "NoteOff"
+      ]
+    },
+    {
+      "id": "06-timed-arpeggio",
+      "file": "examples/06-timed-arpeggio.lua",
+      "title": "A timed arpeggio",
+      "summary": "The held keys are played one after the other on a repeating timer, in an euclidean rhythm of 5 hits in 8 steps. Shows SetTimer (repeating, in ticks), OnTimer, StopTimer and the library \"rhythm\". The timer runs while a key is held. It plays on channel 1 at velocity 100; take both from the hook arguments to follow the player.",
+      "code": "-- A timed arpeggio\n-- The held keys are played one after the other on a repeating timer, in an euclidean rhythm of 5 hits in 8 steps. Shows\n-- SetTimer (repeating, in ticks), OnTimer, StopTimer and the library \"rhythm\". The timer runs while a key is held.\n-- It plays on channel 1 at velocity 100; take both from the hook arguments to follow the player.\nimport \"rhythm\"\n\nlocal pattern = Rhythm.euclid(5, 8)\nlocal held = {} -- the held notes, as they were pressed\nlocal position = 0\n\nlocal function remove(note)\n    for i, heldNote in ipairs(held) do\n        if heldNote == note then\n            table.remove(held, i)\n        end\n    end\nend\n\nfunction OnNoteOn(channel, note, velocity)\n    if #held == 0 then\n        position = 0\n        SetTimer(0, { ticks = Ticks.Eighth, repeating = true })\n    end\n    remove(note)\n    held[#held + 1] = note\nend\n\nfunction OnNoteOff(channel, note, velocity)\n    remove(note)\n    if #held == 0 then\n        StopTimer(0)\n    end\nend\n\nfunction OnTimer(id)\n    if #held > 0 and pattern[position % #pattern + 1] then\n        Note(1, held[position % #held + 1], 100, { lengthTicks = Ticks.Sixteenth })\n    end\n    position = position + 1\nend\n",
+      "uses": [
+        "Rhythm",
+        "OnNoteOn",
+        "SetTimer",
+        "Ticks",
+        "OnNoteOff",
+        "StopTimer",
+        "OnTimer",
+        "Note"
+      ]
+    },
+    {
+      "id": "07-panic-on-stop",
+      "file": "examples/07-panic-on-stop.lua",
+      "title": "All notes off when the transport stops",
+      "summary": "Notes go through, and when the host's transport stops every sounding note is ended. Shows OnTransportStop and Panic. Panic also drops everything that was waiting, so it is the right answer to a hung note.",
+      "code": "-- All notes off when the transport stops\n-- Notes go through, and when the host's transport stops every sounding note is ended. Shows OnTransportStop and Panic.\n-- Panic also drops everything that was waiting, so it is the right answer to a hung note.\nfunction OnNoteOn(channel, note, velocity) Pass() end\nfunction OnNoteOff(channel, note, velocity) Pass() end\n\nfunction OnTransportStop()\n    Panic()\nend\n",
+      "uses": [
+        "OnNoteOn",
+        "Pass",
+        "OnNoteOff",
+        "OnTransportStop",
+        "Panic"
+      ]
+    }
+  ],
+  "scripts": [
+    {
+      "id": "arpeggiator",
+      "file": "arpeggiator.lua",
+      "title": "Arpeggiator: the keys you hold are played one after the other in time with the clock",
+      "summary": "Change the settings below and save the file; copy it to user-1.lua on the device to make it your own.",
+      "code": "-- Arpeggiator: the keys you hold are played one after the other in time with the clock.\n-- Change the settings below and save the file; copy it to user-1.lua on the device to make it your own.\n\nlocal mode = \"up\"            -- \"up\", \"down\", \"updown\" or \"random\"\nlocal rate = Ticks.Sixteenth -- ticks per step (Ticks.Eighth, Ticks.Sixteenth, Ticks.EighthTriplet ...)\nlocal gate = 0.5             -- how long a note sounds, as a fraction of a step\nlocal swing = 0.0            -- 0 to 0.5: the odd steps are late by this fraction of a step\nlocal octaves = 1            -- how many octaves the pattern climbs\n\nimport \"rhythm\"\n\nlocal held = {}              -- the held notes, as they were pressed\nlocal channel = 1            -- played on the channel of the last key\nlocal velocity = 100\nlocal position = 0           -- where the pattern is, counted in steps since the first key\n\nlocal function remove(note)\n    for i, heldNote in ipairs(held) do\n        if heldNote == note then\n            table.remove(held, i)\n            return\n        end\n    end\nend\n\nlocal function pattern()\n    local sorted = {}\n    for _, note in ipairs(held) do\n        sorted[#sorted + 1] = note\n    end\n    table.sort(sorted)\n    local notes = {}\n    for octave = 0, octaves - 1 do\n        for _, note in ipairs(sorted) do\n            if note + 12 * octave <= 127 then\n                notes[#notes + 1] = note + 12 * octave\n            end\n        end\n    end\n    return notes\nend\n\nfunction OnNoteOn(ch, note, vel)\n    if #held == 0 then\n        position = 0\n    end\n    remove(note)\n    held[#held + 1] = note\n    channel = ch\n    velocity = vel\nend\n\nfunction OnNoteOff(ch, note, vel)\n    remove(note)\nend\n\nfunction OnTick(tick)\n    if tick % rate ~= 0 or #held == 0 then\n        return\n    end\n    local notes = pattern()\n    local count = #notes\n    local index\n    if mode == \"down\" then\n        index = count - (position % count)\n    elseif mode == \"updown\" and count > 1 then\n        local cycle = 2 * count - 2\n        local at = position % cycle\n        index = at < count and at + 1 or cycle - at + 1\n    elseif mode == \"random\" then\n        index = math.random(count)\n    else\n        index = position % count + 1\n    end\n    local step = tick // rate\n    Note(channel, notes[index], velocity, {\n        delayTicks = Rhythm.swing(step, swing, rate),\n        lengthTicks = rate * gate,\n    })\n    position = position + 1\nend\n",
+      "uses": [
+        "Ticks",
+        "Rhythm",
+        "OnNoteOn",
+        "OnNoteOff",
+        "OnTick",
+        "Note"
+      ]
+    },
+    {
+      "id": "cc-remap",
+      "file": "cc-remap.lua",
+      "title": "CC Remap: controllers are turned into other controllers, everything else goes through",
+      "summary": "Change the tables below and save the file.",
+      "code": "-- CC Remap: controllers are turned into other controllers, everything else goes through.\n-- Change the tables below and save the file.\n\nlocal remap = {\n    [1] = 74,    -- mod wheel becomes CC 74 (brightness)\n    [11] = 7,    -- expression becomes volume\n}\nlocal scale = {\n    [11] = 1.0,  -- optional factor for the value of a controller (by its number before the remap)\n}\n\nfunction OnCC(channel, controller, value)\n    local target = remap[controller]\n    if target == nil then\n        Pass()\n        return\n    end\n    local out = math.floor(value * (scale[controller] or 1.0) + 0.5)\n    CC(channel, target, clamp(out, 0, 127))\nend\n\nfunction OnNoteOn(channel, note, velocity) Pass() end\nfunction OnNoteOff(channel, note, velocity) Pass() end\nfunction OnPitchBend(channel, value) Pass() end\nfunction OnProgramChange(channel, program) Pass() end\nfunction OnOther(status, data1, data2) Pass() end\n",
+      "uses": [
+        "OnCC",
+        "Pass",
+        "CC",
+        "OnNoteOn",
+        "OnNoteOff",
+        "OnPitchBend",
+        "OnProgramChange",
+        "OnOther"
+      ]
+    },
+    {
+      "id": "chord-player",
+      "file": "chord-player.lua",
+      "title": "Chord Player: every key you play sounds a chord on top of it",
+      "summary": "Change the settings below and save the file.",
+      "code": "-- Chord Player: every key you play sounds a chord on top of it.\n-- Change the settings below and save the file.\n\nimport \"chords\"\n\nlocal shape = Chords.Major  -- Chords.Major, Chords.Minor, Chords.Dominant7 ... or your own list of semitones\nlocal strumMs = 0           -- delay between the notes of the chord (0: all at once)\nlocal inversion = 0         -- how often the lowest note is moved up an octave\n\nlocal sounding = {}         -- [channel][note] = the notes that this key switched on\n\nfunction OnNoteOn(channel, note, velocity)\n    local notes = Chords.invert(Chords.notes(note, shape), inversion)\n    sounding[channel] = sounding[channel] or {}\n    sounding[channel][note] = notes\n    for i, chordNote in ipairs(notes) do\n        NoteOn(channel, chordNote, velocity, {delayMs = (i - 1) * strumMs})\n    end\nend\n\nfunction OnNoteOff(channel, note, velocity)\n    local notes = sounding[channel] and sounding[channel][note]\n    if notes == nil then\n        return\n    end\n    sounding[channel][note] = nil\n    for i, chordNote in ipairs(notes) do\n        NoteOff(channel, chordNote, {delayMs = (i - 1) * strumMs})\n    end\nend\n\nfunction OnCC(channel, controller, value) Pass() end\nfunction OnPitchBend(channel, value) Pass() end\nfunction OnProgramChange(channel, program) Pass() end\n",
+      "uses": [
+        "Chords",
+        "OnNoteOn",
+        "NoteOn",
+        "OnNoteOff",
+        "NoteOff",
+        "OnCC",
+        "Pass",
+        "OnPitchBend",
+        "OnProgramChange"
+      ]
+    },
+    {
+      "id": "octave-doubler",
+      "file": "octave-doubler.lua",
+      "title": "Octave Doubler: every note is played together with the same note some octaves higher or lower",
+      "summary": "Change the settings below and save the file.",
+      "code": "-- Octave Doubler: every note is played together with the same note some octaves higher or lower.\n-- Change the settings below and save the file.\n\nlocal octaveShift = 1       -- 1: an octave up, -1: an octave down, 2: two up ...\nlocal level = 0.7           -- velocity of the added note as a fraction of the played one\n\nlocal added = {}            -- [channel][note] = the note that was added, or nil\n\nfunction OnNoteOn(channel, note, velocity)\n    Pass()\n    local other = note + 12 * octaveShift\n    added[channel] = added[channel] or {}\n    added[channel][note] = nil\n    if other >= 0 and other <= 127 and other ~= note then\n        added[channel][note] = other\n        NoteOn(channel, other, math.max(1, math.floor(velocity * level + 0.5)))\n    end\nend\n\nfunction OnNoteOff(channel, note, velocity)\n    Pass()\n    local other = added[channel] and added[channel][note]\n    if other ~= nil then\n        added[channel][note] = nil\n        NoteOff(channel, other)\n    end\nend\n\nfunction OnCC(channel, controller, value) Pass() end\nfunction OnPitchBend(channel, value) Pass() end\nfunction OnProgramChange(channel, program) Pass() end\n",
+      "uses": [
+        "OnNoteOn",
+        "Pass",
+        "NoteOn",
+        "OnNoteOff",
+        "NoteOff",
+        "OnCC",
+        "OnPitchBend",
+        "OnProgramChange"
+      ]
+    },
+    {
+      "id": "passthrough",
+      "file": "passthrough.lua",
+      "title": "Passthrough: every message goes out unchanged (one latency later). The starting point for a script of your own",
+      "summary": "",
+      "code": "-- Passthrough: every message goes out unchanged (one latency later). The starting point for a script of your own.\n\nfunction OnNoteOn(channel, note, velocity) Pass() end\nfunction OnNoteOff(channel, note, velocity) Pass() end\nfunction OnCC(channel, controller, value) Pass() end\nfunction OnPitchBend(channel, value) Pass() end\nfunction OnProgramChange(channel, program) Pass() end\nfunction OnOther(status, data1, data2) Pass() end\n",
+      "uses": [
+        "OnNoteOn",
+        "Pass",
+        "OnNoteOff",
+        "OnCC",
+        "OnPitchBend",
+        "OnProgramChange",
+        "OnOther"
+      ]
+    },
+    {
+      "id": "scale-quantiser",
+      "file": "scale-quantiser.lua",
+      "title": "Scale Quantiser: every note is moved to the nearest note of a scale",
+      "summary": "Change the settings below and save the file.",
+      "code": "-- Scale Quantiser: every note is moved to the nearest note of a scale.\n-- Change the settings below and save the file.\n\nimport \"scales\"\n\nlocal root = 0                  -- 0 = C, 1 = C#, ... 11 = B\nlocal shape = Scales.Major      -- Scales.Minor, Scales.PentatonicMinor, Scales.Blues ... or your own list\n\nlocal played = {}               -- [channel][note] = the note that went out, so the note off matches\n\nfunction OnNoteOn(channel, note, velocity)\n    local out = Scales.quantise(note, root, shape)\n    played[channel] = played[channel] or {}\n    played[channel][note] = out\n    NoteOn(channel, out, velocity)\nend\n\nfunction OnNoteOff(channel, note, velocity)\n    local out = played[channel] and played[channel][note]\n    if out == nil then\n        return\n    end\n    played[channel][note] = nil\n    NoteOff(channel, out)\nend\n\nfunction OnCC(channel, controller, value) Pass() end\nfunction OnPitchBend(channel, value) Pass() end\nfunction OnProgramChange(channel, program) Pass() end\n",
+      "uses": [
+        "Scales",
+        "OnNoteOn",
+        "NoteOn",
+        "OnNoteOff",
+        "NoteOff",
+        "OnCC",
+        "Pass",
+        "OnPitchBend",
+        "OnProgramChange"
+      ]
+    }
+  ],
+  "guide": "# Writing a MIDI Script script (guide for an AI assistant)\n\nMIDI Script is a MIDI in, MIDI out plugin. Every incoming message is handed to a Lua script, and what the script sends\nis what comes out: it can pass, change, add or drop messages and play things on the clock. This file tells you how to\nwork here. It holds no names, ranges or limits of the API: those are in `API.md` and `constants.lua` next to it,\ngenerated from the plugin, and always right. Read them first.\n\n## 1. What a script is, and what is in this folder\n\n- A script is one Lua 5.4 text file. Its top-level code runs once when it is loaded. After that the plugin calls the\n  hooks the script defines (global functions such as `OnNoteOn`), and the script answers by calling commands (global\n  functions such as `NoteOn`, `CC`, `Pass`). A hook that is not defined is not called.\n- **A message only goes out when the script sends it.** A message whose hook is missing, or whose hook sends nothing, is\n  dropped. `Pass()` sends the message of the hook that is running, unchanged. The real-time messages (MIDI clock) have\n  no hook and are not passed on.\n- Files here: `API.md` (every command, hook, constant, library and limit), `constants.lua` (the named constants, already\n  global in every script), `examples/` (small scripts that run as they are), the factory scripts (`passthrough.lua`,\n  `arpeggiator.lua`, ...) and the libraries `chords.lua`, `rhythm.lua` and `scales.lua`. The factory scripts are read only.\n\n## 2. Where a script goes\n\n- On the Dwarf a script is a file `/data/jaypacks/scripts/midiscript/user-1.lua` up to `user-8.lua`. Reach it with\n  `ssh root@192.168.51.1` and `scp -O`; the data partition survives a plugin update.\n- Select it with the plugin's Script setting (User 1 to User 8). The factory scripts cannot be edited: to change one, or\n  an example, copy it to a user slot.\n- A script may `import \"chords\"`, `import \"rhythm\"` or `import \"scales\"` (factory libraries, see `API.md`); it cannot read\n  other files, and `io`, `os`, `require` and `load` do not exist.\n\n## 3. The loop to follow\n\n1. Write the script to a user slot.\n2. The plugin checks the file twice a second and reloads it after a save. Nothing is restarted.\n3. Read `/data/jaypacks/scripts/midiscript/user-1.log` (same name as the script, `.log`). It says whether the load\n   worked, the message with the line of an error, the calls that were ignored, and every line the script wrote with\n   `Log(...)`. The plugin's Script status output shows the same in a number (1 ok, 3 compile error, 4 runtime error,\n   5 over the budget, 6 out of memory). Late and Dropped count messages that missed their time or were lost.\n4. Fix what the log says and save again.\n\nA script that fails to load (syntax error, error at the top level or in `OnStart`) is rejected and the previous script\nkeeps playing, so a typo never silences the plugin; but the new script is not running either. Always read the log after\na save. An error in a hook ends the notes that call started, drops what it had queued, and the next event runs again.\n\n## 4. Rules in short\n\n- Hooks are global functions with fixed names and argument lists (`API.md`, Hooks). Write `function OnNoteOn(channel,\n  note, velocity)`, not a local.\n- Channels count from 1 in the hooks and in the commands. Notes and velocities are 0 to 127; a note on with velocity 0\n  reaches `OnNoteOff`. Pitch bend is -8192 to 8191.\n- Commands take positional arguments and, last, an optional table of named fields: `Note(1, 60, 100, { lengthTicks =\n  Ticks.Sixteenth })`. Time is in milliseconds (`delayMs`, `lengthMs`, `ms`) or ticks (`delayTicks`, `lengthTicks`,\n  `ticks`); the clock has 24 ticks per quarter note and `Ticks.Quarter` and the other lengths are in `constants.lua`.\n- `Note` sends a note on and, one length later, its note off, which is certain even if the script is replaced. With\n  `NoteOn` the script must send the `NoteOff` itself: remember what a key started, and send the note off to the same\n  note (a transposing script that changed its setting in between would otherwise leave a note hanging). `Panic()` ends\n  everything.\n- `Pass()` works only inside the hooks for incoming MIDI (`OnNoteOn`, `OnNoteOff`, `OnCC`, `OnPitchBend`,\n  `OnProgramChange`, `OnOther`), not in a timer or a tick.\n- `OnTick` and the ticks of a timer need the clock: the host's transport (or the tempo the plugin reads); `OnTimer` is\n  set with `SetTimer(id, { ms = ..., ticks = ..., repeating = true })`.\n- `import \"name\"` runs a library once, then its global table is there (`import \"scales\"` gives `Scales`).\n- Randomness is `math.random`; it gives the same numbers on every run. Keep state in locals at the top of the script.\n- A hook has a small budget of instructions and milliseconds: no long loops.\n- A number field outside its range is clamped. An integer argument (a channel, a note, a velocity, a timer id) outside its\n  range, or not whole, makes the call ignored and is written to the log. A field name the command does not know is\n  ignored and logged. A wrong type or a missing argument is an error in the hook.\n\n## 5. Mistakes seen most\n\nEach line is a message the plugin writes to the log, and the fix.\n\n| Log says | Cause and fix |\n| --- | --- |\n| `NoteOn: 'channel' = 0 is outside 1..16, call ignored` | Channels count from 1 here. |\n| `NoteOn: 'note' = 128 is outside 0..127, call ignored` | A transposed note must be clamped: `clamp(note + shift, 0, 127)`. |\n| `NoteOn: 'velocity' = 0 is outside 1..127, call ignored` | A note on needs a velocity of at least 1. |\n| `Note: 'velocity' = 63.5 is not a whole number, call ignored` | Round it: `math.floor(x + 0.5)`. |\n| `Note: unknown field 'length' is ignored` | The fields are `lengthMs` and `lengthTicks`. |\n| `Pass: Pass() works only inside a hook for incoming MIDI, call ignored` | Pass was called from a timer or a tick. |\n| `CC expects 3 argument(s) and got 2` | A command called without all its arguments. |\n| `CC: the last argument must be a table of fields, not number` | A value too many: named fields go in braces. |\n| attempt to call a nil value (global 'noteOn') | A misspelt command or hook name. Names are case sensitive. |\n| the script sounds like the previous one | It was rejected at load; the log has the reason. |\n| notes hang | A `NoteOn` without its `NoteOff` (or the off went to another note). Use `Note`, or remember the note sent. |\n| nothing comes out | The hook is missing or does not send: add `Pass()` or a command. |\n\n## 6. The examples\n\n| File | Shows | Uses |\n| --- | --- | --- |\n| `examples/01-pass-through.lua` | everything through; a message without Pass is dropped | OnNoteOn, OnNoteOff, OnCC, OnPitchBend, OnProgramChange, OnOther, Pass |\n| `examples/02-transpose.lua` | a shift in semitones, remembering what each key sent | OnNoteOn, OnNoteOff, OnCC, OnPitchBend, NoteOn, NoteOff, Pass |\n| `examples/03-chord-from-one-note.lua` | a strummed chord on every key | OnNoteOn, OnNoteOff, NoteOn, NoteOff, import \"chords\" |\n| `examples/04-remap-a-controller.lua` | one controller turned into another | OnCC, CC, Pass |\n| `examples/05-quantise-to-a-scale.lua` | every note moved into a scale | OnNoteOn, OnNoteOff, NoteOn, NoteOff, import \"scales\" |\n| `examples/06-timed-arpeggio.lua` | held keys played on a repeating timer in a rhythm | OnNoteOn, OnNoteOff, OnTimer, SetTimer, StopTimer, Note, import \"rhythm\" |\n| `examples/07-panic-on-stop.lua` | all notes off when the transport stops | OnNoteOn, OnNoteOff, OnTransportStop, Pass, Panic |\n\nStart from the example closest to the task and change it; each was run in the plugin.\n\n## 7. A prompt to start an assistant\n\nPaste this into an assistant started in this folder (or give it the files):\n\n> Read `AGENTS.md`, `API.md`, `constants.lua` and the files in `examples/`. Write a MIDI Script script for: (describe\n> what should happen to the notes). Use only commands, hooks, constants and libraries that exist in `API.md`. Save it as\n> `user-1.lua`, copy it to `/data/jaypacks/scripts/midiscript/` on the Dwarf, wait two seconds, read `user-1.log` and fix\n> every problem it names. Tell me what to play to hear each part.\n",
+  "sources": [
+    {
+      "path": "plugins/midiscript/MidiScript.h",
+      "sha256": "cf0c202cd49844105a6f6c9b3a9a81b93647e2fdff5813ca8cda582f5ebb6a89"
+    },
+    {
+      "path": "plugins/midiscript/scripts/AGENTS.md",
+      "sha256": "b5249c5e9898788d4fd0f544cc54ccec00a5f149fa086d3531afbb1034ce3a0e"
+    },
+    {
+      "path": "plugins/midiscript/scripts/arpeggiator.lua",
+      "sha256": "2cd5847d3f94113d8eff806aa0be7315bd55f29045a3504e3a6ce391570ff236"
+    },
+    {
+      "path": "plugins/midiscript/scripts/cc-remap.lua",
+      "sha256": "4e2f6ec000d4bda34aab4b4abef781fccef8f1b41919837c624448f2ca324872"
+    },
+    {
+      "path": "plugins/midiscript/scripts/chord-player.lua",
+      "sha256": "b9d6dcdc830fdca1d488f830c1dfa9940b656dec613ef94003697cf035d1a2f0"
+    },
+    {
+      "path": "plugins/midiscript/scripts/chords.lua",
+      "sha256": "9e9311443692e539172efc468d942a3131a066609ebe29429718ca623c848035"
+    },
+    {
+      "path": "plugins/midiscript/scripts/examples/01-pass-through.lua",
+      "sha256": "9562cecb905ffca937bf3dc8c9619c8c56f67189ee28d7eb279d79c2cc88a3ec"
+    },
+    {
+      "path": "plugins/midiscript/scripts/examples/02-transpose.lua",
+      "sha256": "6ff4a7c302310eca44edcba3206b32cde32a1c5f191d071312f1a7eec60627ea"
+    },
+    {
+      "path": "plugins/midiscript/scripts/examples/03-chord-from-one-note.lua",
+      "sha256": "50db76ada41d2f2badf5671b907ca32affa1fa5abc5c8455a7f1f0b45d8d2596"
+    },
+    {
+      "path": "plugins/midiscript/scripts/examples/04-remap-a-controller.lua",
+      "sha256": "27a5e627863a2b31d104bd95041fb41b8c86165d9bf2657615bfc19c455cadd6"
+    },
+    {
+      "path": "plugins/midiscript/scripts/examples/05-quantise-to-a-scale.lua",
+      "sha256": "9487edfbaee3bc41272209ca8b6cf1ecf2110d7ea354e78148086fef8a97f890"
+    },
+    {
+      "path": "plugins/midiscript/scripts/examples/06-timed-arpeggio.lua",
+      "sha256": "8fe97151255d6f3ee2f6aa28000e3baa61e191a4ae7b9697fe40a8f45f043cae"
+    },
+    {
+      "path": "plugins/midiscript/scripts/examples/07-panic-on-stop.lua",
+      "sha256": "04f494abaa527c3946c899cebe055d7e7b20847e77810b1db46e7b63a6d820e6"
+    },
+    {
+      "path": "plugins/midiscript/scripts/octave-doubler.lua",
+      "sha256": "5717ff92ac1bcbbb8b43b416d1ae17aa94a0bab4e3caaafcb53c07aeffbb1e49"
+    },
+    {
+      "path": "plugins/midiscript/scripts/passthrough.lua",
+      "sha256": "53f63e05232a365a653d0c08403ed8af8c3eeae460d748ac498aefd6e08d9915"
+    },
+    {
+      "path": "plugins/midiscript/scripts/rhythm.lua",
+      "sha256": "6b9e9cc72c3079f10c97ca959874e4e3b8a33ac5c8516006ccf816c60c8f4e95"
+    },
+    {
+      "path": "plugins/midiscript/scripts/scale-quantiser.lua",
+      "sha256": "6a27c8a81ccbf6a014c16e573dbfbb45f4e15f475e8248c35c74f5f12af9e14e"
+    },
+    {
+      "path": "plugins/midiscript/scripts/scales.lua",
+      "sha256": "967d42ca55d0d7b2b044a4fc9e66e3b5ad479bc915c323125512fdb6e5b08f74"
+    },
+    {
+      "path": "scripting/ApiDescription.cpp",
+      "sha256": "dbe66a8db60401ea5b8978640315e3ab7ba35caea79f926977bc6c39fb7982eb"
+    },
+    {
+      "path": "scripting/Binding.h",
+      "sha256": "0f73e831508308beda0c4afb2911145a5975f165ccfe30f8b7a8a00754f9801f"
+    },
+    {
+      "path": "scripting/LuaRuntime.cpp",
+      "sha256": "2bbfe5762b5750627f55d017932aea93de3c5b4b6d1ee3801d49d84c7d0013d5"
+    },
+    {
+      "path": "scripting/LuaRuntime.h",
+      "sha256": "596b0a665922d9b1a13ad62baee1779bf4bbefe806f93aac0e5312271bd5a1a8"
+    },
+    {
+      "path": "scripting/ScriptHost.h",
+      "sha256": "16dd3333179e88f637bb26a28e9e3f08262985253c23859c2dbf33bc8f1f5f86"
+    },
+    {
+      "path": "scripting/Timers.h",
+      "sha256": "f0762a73f40b0a39580f7656700ee4547c772eb072a3a840284694b32f537d7b"
+    },
+    {
+      "path": "third_party/lua/lua.h",
+      "sha256": "3b77329f9deed929a5cbe7a7d5fc81ebbb63fd869a49e0a9302fe9240caf1930"
+    }
+  ]
+}

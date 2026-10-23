@@ -1,0 +1,1538 @@
+{
+  "schema": 1,
+  "plugin": "morphexsynth",
+  "title": "Morphexsynth",
+  "lua": "5.4.8",
+  "limits": {
+    "textMaxLength": 31,
+    "scriptMaxBytes": 262144,
+    "memoryBytes": 1048576,
+    "handlerInstructions": 100000,
+    "loadInstructions": 2000000,
+    "handlerMillis": 20,
+    "loadMillis": 250
+  },
+  "sandbox": {
+    "libraries": [
+      "base",
+      "math",
+      "table",
+      "string"
+    ],
+    "removedGlobals": [
+      "dofile",
+      "loadfile",
+      "load",
+      "collectgarbage",
+      "warn",
+      "print"
+    ],
+    "removedFields": {
+      "string": [
+        "dump"
+      ]
+    },
+    "runtimeGlobals": [
+      "Log",
+      "print",
+      "clamp",
+      "lerp",
+      "import"
+    ]
+  },
+  "noopImports": [
+    "constants"
+  ],
+  "commands": [
+    {
+      "name": "SetVolume",
+      "doc": "Sets the level of the patch.",
+      "args": [
+        {
+          "name": "db",
+          "kind": "number",
+          "min": -60,
+          "max": 12,
+          "default": 0,
+          "doc": "level of the patch in dB (the Vol dial adds to it)"
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "SetOscillator",
+      "doc": "Sets one of the three oscillators.",
+      "args": [
+        {
+          "name": "index",
+          "kind": "integer",
+          "min": 0,
+          "max": 2,
+          "default": 0,
+          "doc": "which oscillator, 0 to 2"
+        }
+      ],
+      "fields": [
+        {
+          "name": "waveform",
+          "kind": "integer",
+          "min": 0,
+          "max": 4,
+          "default": 0,
+          "doc": "waveform",
+          "enum": "OscWaveform"
+        },
+        {
+          "name": "detune",
+          "kind": "number",
+          "min": -48,
+          "max": 48,
+          "default": 0,
+          "doc": "tuning against the note in semitones"
+        },
+        {
+          "name": "level",
+          "kind": "number",
+          "min": -1,
+          "max": 1,
+          "default": 0,
+          "doc": "level of the oscillator"
+        },
+        {
+          "name": "pwm",
+          "kind": "number",
+          "min": -1,
+          "max": 1,
+          "default": 0,
+          "doc": "pulse-width style phase distortion"
+        },
+        {
+          "name": "pitchFactor",
+          "kind": "number",
+          "min": 0.01,
+          "max": 16,
+          "default": 1,
+          "doc": "frequency factor against the note (2 is an octave up)"
+        }
+      ]
+    },
+    {
+      "name": "SetAmpEnvelope",
+      "doc": "Sets the amplitude envelope.",
+      "args": [],
+      "fields": [
+        {
+          "name": "attackMs",
+          "kind": "number",
+          "min": 0,
+          "max": 20000,
+          "default": 10,
+          "doc": "attack time in ms"
+        },
+        {
+          "name": "decayMs",
+          "kind": "number",
+          "min": 0,
+          "max": 20000,
+          "default": 200,
+          "doc": "decay time in ms"
+        },
+        {
+          "name": "sustainLevel",
+          "kind": "number",
+          "min": 0,
+          "max": 1,
+          "default": 0.5,
+          "doc": "sustain level"
+        },
+        {
+          "name": "releaseMs",
+          "kind": "number",
+          "min": 0,
+          "max": 20000,
+          "default": 100,
+          "doc": "release time in ms"
+        }
+      ]
+    },
+    {
+      "name": "SetFilterEnvelope",
+      "doc": "Sets the filter envelope and how far it moves the cutoff.",
+      "args": [],
+      "fields": [
+        {
+          "name": "attackMs",
+          "kind": "number",
+          "min": 0,
+          "max": 20000,
+          "default": 10,
+          "doc": "attack time in ms"
+        },
+        {
+          "name": "decayMs",
+          "kind": "number",
+          "min": 0,
+          "max": 20000,
+          "default": 200,
+          "doc": "decay time in ms"
+        },
+        {
+          "name": "sustainLevel",
+          "kind": "number",
+          "min": 0,
+          "max": 1,
+          "default": 0.5,
+          "doc": "sustain level"
+        },
+        {
+          "name": "releaseMs",
+          "kind": "number",
+          "min": 0,
+          "max": 20000,
+          "default": 100,
+          "doc": "release time in ms"
+        },
+        {
+          "name": "contour",
+          "kind": "number",
+          "min": -4,
+          "max": 4,
+          "default": 0,
+          "doc": "how far the envelope moves the cutoff (positive opens the filter as the envelope rises)"
+        }
+      ]
+    },
+    {
+      "name": "SetPitchEnvelope",
+      "doc": "Sets the pitch envelope and the glide between notes.",
+      "args": [],
+      "fields": [
+        {
+          "name": "attackMs",
+          "kind": "number",
+          "min": 0,
+          "max": 20000,
+          "default": 0,
+          "doc": "attack time in ms"
+        },
+        {
+          "name": "decayMs",
+          "kind": "number",
+          "min": 0,
+          "max": 20000,
+          "default": 0,
+          "doc": "decay time in ms"
+        },
+        {
+          "name": "depthSemitones",
+          "kind": "number",
+          "min": -48,
+          "max": 48,
+          "default": 0,
+          "doc": "how far the envelope bends the pitch in semitones"
+        },
+        {
+          "name": "glideMsPerOctave",
+          "kind": "number",
+          "min": 0,
+          "max": 5000,
+          "default": 0,
+          "doc": "glide time per octave from note to note in ms"
+        }
+      ]
+    },
+    {
+      "name": "SetLfo",
+      "doc": "Sets the LFO of every voice.",
+      "args": [],
+      "fields": [
+        {
+          "name": "waveform",
+          "kind": "integer",
+          "min": 0,
+          "max": 7,
+          "default": 0,
+          "doc": "waveform",
+          "enum": "LfoWaveform"
+        },
+        {
+          "name": "speedHz",
+          "kind": "number",
+          "min": 0.01,
+          "max": 50,
+          "default": 1,
+          "doc": "rate in Hz"
+        },
+        {
+          "name": "filterDepth",
+          "kind": "number",
+          "min": -4,
+          "max": 4,
+          "default": 0,
+          "doc": "how far the LFO moves the cutoff"
+        },
+        {
+          "name": "oscDepth",
+          "kind": "number",
+          "min": -4,
+          "max": 4,
+          "default": 0,
+          "doc": "pitch modulation of all three oscillators in semitones"
+        },
+        {
+          "name": "keyFollow",
+          "kind": "number",
+          "min": -4,
+          "max": 4,
+          "default": 0,
+          "doc": "how much the note changes the LFO rate"
+        }
+      ]
+    },
+    {
+      "name": "SetFilter",
+      "doc": "Sets the filter: cutoff, resonance and type.",
+      "args": [],
+      "fields": [
+        {
+          "name": "cutoff",
+          "kind": "number",
+          "min": 0,
+          "max": 135,
+          "default": 72,
+          "doc": "cutoff as a note number"
+        },
+        {
+          "name": "resonance",
+          "kind": "number",
+          "min": 0,
+          "max": 2,
+          "default": 0,
+          "doc": "resonance, 0 none, 1 near self-oscillation"
+        },
+        {
+          "name": "type",
+          "kind": "text",
+          "doc": "filter type, default LP4 (see Filter types below)",
+          "values": [
+            {
+              "name": "LP1",
+              "doc": "the mix '6 lp(inv)'"
+            },
+            {
+              "name": "LP2",
+              "doc": "the mix '2 pole lp'"
+            },
+            {
+              "name": "LP3",
+              "doc": "the mix '3 pole lp(inv)'"
+            },
+            {
+              "name": "LP4",
+              "doc": "the mix '4 pole lp'"
+            },
+            {
+              "name": "HP1",
+              "doc": "the mix '1 pole hp'"
+            },
+            {
+              "name": "HP2",
+              "doc": "the mix '2 pole hp'"
+            },
+            {
+              "name": "HP3",
+              "doc": "the mix '3 pole hp'"
+            },
+            {
+              "name": "HP4",
+              "doc": "the mix '* 4 pole hp'"
+            },
+            {
+              "name": "BP2",
+              "doc": "the mix '2 pole bp'"
+            },
+            {
+              "name": "BP4",
+              "doc": "the mix '4 pole bp'"
+            },
+            {
+              "name": "AP1",
+              "doc": "the mix '* 1 pole ap (inv)'"
+            },
+            {
+              "name": "AP2",
+              "doc": "the mix '* 2 pole ap'"
+            },
+            {
+              "name": "AP3",
+              "doc": "the mix '* 3 pole ap (inv)'"
+            },
+            {
+              "name": "AP4",
+              "doc": "the mix '* 4 pole ap'"
+            },
+            {
+              "name": "Notch",
+              "doc": "the mix '2 pole notch'"
+            },
+            {
+              "name": "6 lp(inv)"
+            },
+            {
+              "name": "2 pole lp"
+            },
+            {
+              "name": "3 pole lp(inv)"
+            },
+            {
+              "name": "4 pole lp"
+            },
+            {
+              "name": "1 pole hp"
+            },
+            {
+              "name": "2 pole hp"
+            },
+            {
+              "name": "3 pole hp"
+            },
+            {
+              "name": "2 pole bp"
+            },
+            {
+              "name": "4 pole bp"
+            },
+            {
+              "name": "2 pole notch"
+            },
+            {
+              "name": "3 pole ap (inv)"
+            },
+            {
+              "name": "2 pole hp + 1 pole lp"
+            },
+            {
+              "name": "3 pole hp + 1 pole lp"
+            },
+            {
+              "name": "2 pole notch + 1 pole lp"
+            },
+            {
+              "name": "3 pole ap + 1 pole lp"
+            },
+            {
+              "name": "2 pole hp + 1 pole lp B"
+            },
+            {
+              "name": "* 1 pole ap (inv)"
+            },
+            {
+              "name": "* 2 pole ap"
+            },
+            {
+              "name": "* 3 pole ap (inv)"
+            },
+            {
+              "name": "* 4 pole ap"
+            },
+            {
+              "name": "* 2 pole phaser"
+            },
+            {
+              "name": "* 3 pole phaser"
+            },
+            {
+              "name": "* 4 pole phaser"
+            },
+            {
+              "name": "* 4 pole hp"
+            },
+            {
+              "name": "* double lp exp(inv)"
+            },
+            {
+              "name": "* LP 1 + Notch -12(inv)"
+            },
+            {
+              "name": "* LP 2 + Notch -12"
+            },
+            {
+              "name": "* Reso before Notch"
+            },
+            {
+              "name": "* Reso after Notch"
+            },
+            {
+              "name": "* Double Notch A (+- Octaves)"
+            },
+            {
+              "name": "* Double Notch Octaves"
+            },
+            {
+              "name": "* Double Notch B"
+            },
+            {
+              "name": "* Double Notch C (Dixon)"
+            },
+            {
+              "name": "* Double Notch D"
+            },
+            {
+              "name": "Bell"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "SetDistortion",
+      "doc": "Selects the distortion curve.",
+      "args": [
+        {
+          "name": "preset",
+          "kind": "integer",
+          "min": 0,
+          "max": 31,
+          "default": 0,
+          "doc": "0 off, 1 to 31 a distortion curve"
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "SetCtrlSlot",
+      "doc": "Sets one slot of the routing matrix: it reads one source, shapes it by a curve, scales it by the depth and adds the result to a target.",
+      "args": [
+        {
+          "name": "slot",
+          "kind": "integer",
+          "min": 0,
+          "max": 9,
+          "default": 0,
+          "doc": "which of the 10 routing slots, 0 to 9"
+        }
+      ],
+      "fields": [
+        {
+          "name": "source",
+          "kind": "integer",
+          "min": 0,
+          "max": 6,
+          "default": 0,
+          "doc": "what the slot reads",
+          "enum": "CtrlSource"
+        },
+        {
+          "name": "curve",
+          "kind": "integer",
+          "min": 0,
+          "max": 4,
+          "default": 2,
+          "doc": "shape of the source",
+          "enum": "CtrlCurve"
+        },
+        {
+          "name": "target",
+          "kind": "integer",
+          "min": 0,
+          "max": 16,
+          "default": 0,
+          "doc": "what the slot moves (None switches the slot off)",
+          "enum": "CtrlTarget"
+        },
+        {
+          "name": "valueType",
+          "kind": "integer",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "doc": "one-sided or signed source",
+          "enum": "CtrlValueType"
+        },
+        {
+          "name": "depth",
+          "kind": "number",
+          "min": -100,
+          "max": 100,
+          "default": 0,
+          "doc": "how far the slot moves the target"
+        }
+      ]
+    },
+    {
+      "name": "SetMpeZone",
+      "doc": "Sets the MPE channels (1 to 16): master and the member channels lower to upper.",
+      "args": [
+        {
+          "name": "master",
+          "kind": "integer",
+          "min": 1,
+          "max": 16,
+          "default": 1,
+          "doc": "master channel, 1 to 16"
+        },
+        {
+          "name": "lower",
+          "kind": "integer",
+          "min": 1,
+          "max": 16,
+          "default": 2,
+          "doc": "first member channel"
+        },
+        {
+          "name": "upper",
+          "kind": "integer",
+          "min": 1,
+          "max": 16,
+          "default": 16,
+          "doc": "last member channel"
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "SetPhaser",
+      "doc": "Sets the phaser of the effects bus.",
+      "args": [],
+      "fields": [
+        {
+          "name": "rateHz",
+          "kind": "number",
+          "min": 0.01,
+          "max": 10,
+          "default": 0.3,
+          "doc": "sweep rate in Hz"
+        },
+        {
+          "name": "depth",
+          "kind": "number",
+          "min": 0,
+          "max": 1,
+          "default": 0.5,
+          "doc": "how far the sweep spans 200 Hz to 2 kHz"
+        },
+        {
+          "name": "feedback",
+          "kind": "number",
+          "min": 0,
+          "max": 1.1,
+          "default": 0,
+          "doc": "resonance around the allpass chain"
+        },
+        {
+          "name": "mix",
+          "kind": "number",
+          "min": 0,
+          "max": 1,
+          "default": 0.5,
+          "doc": "0 dry, 1 fully phased"
+        }
+      ]
+    },
+    {
+      "name": "SetChorus",
+      "doc": "Sets the chorus of the effects bus.",
+      "args": [],
+      "fields": [
+        {
+          "name": "rateHz",
+          "kind": "number",
+          "min": 0.01,
+          "max": 8,
+          "default": 0.6,
+          "doc": "sweep rate in Hz"
+        },
+        {
+          "name": "depth",
+          "kind": "number",
+          "min": 0,
+          "max": 1,
+          "default": 0.5,
+          "doc": "sweep depth"
+        },
+        {
+          "name": "mix",
+          "kind": "number",
+          "min": 0,
+          "max": 1,
+          "default": 0.5,
+          "doc": "0 dry, 1 fully wet"
+        }
+      ]
+    },
+    {
+      "name": "SetReverb",
+      "doc": "Sets the reverb of the effects bus.",
+      "args": [],
+      "fields": [
+        {
+          "name": "sizeMeters",
+          "kind": "number",
+          "min": 1,
+          "max": 60,
+          "default": 12,
+          "doc": "size of the room in metres"
+        },
+        {
+          "name": "decayMs",
+          "kind": "number",
+          "min": 0,
+          "max": 20000,
+          "default": 1500,
+          "doc": "decay time in ms"
+        },
+        {
+          "name": "dryDb",
+          "kind": "number",
+          "min": -100,
+          "max": 12,
+          "default": 0,
+          "doc": "level of the dry signal in dB"
+        },
+        {
+          "name": "mixDb",
+          "kind": "number",
+          "min": -100,
+          "max": 12,
+          "default": -100,
+          "doc": "level of the reverb in dB (-100 is off)"
+        }
+      ]
+    },
+    {
+      "name": "SetWaveMorph",
+      "doc": "Lets an oscillator morph between three waveforms: the one of SetOscillator, then waveform2 and waveform3. With morph = 0 (the default) the oscillator sounds exactly as without it; call it again from a hook to move the position while notes sound.",
+      "args": [
+        {
+          "name": "index",
+          "kind": "integer",
+          "min": 0,
+          "max": 2,
+          "default": 0,
+          "doc": "which oscillator, 0 to 2"
+        }
+      ],
+      "fields": [
+        {
+          "name": "waveform2",
+          "kind": "integer",
+          "min": 0,
+          "max": 4,
+          "default": 3,
+          "doc": "waveform of the second slot (default Square)",
+          "enum": "OscWaveform"
+        },
+        {
+          "name": "waveform3",
+          "kind": "integer",
+          "min": 0,
+          "max": 4,
+          "default": 2,
+          "doc": "waveform of the third slot (default Saw)",
+          "enum": "OscWaveform"
+        },
+        {
+          "name": "morph",
+          "kind": "number",
+          "min": 0,
+          "max": 1,
+          "default": 0,
+          "doc": "position over the three slots: 0 the waveform of SetOscillator, 0.5 the second, 1 the third, between them a crossfade; a change takes 10 ms"
+        }
+      ]
+    }
+  ],
+  "hooks": [
+    {
+      "name": "OnStart",
+      "doc": "Called once after the script is loaded; the usual place to set up a patch.",
+      "args": []
+    },
+    {
+      "name": "OnNoteOn",
+      "doc": "A note began. channel counts from 0, velocity is 1 to 127.",
+      "args": [
+        "channel",
+        "note",
+        "velocity"
+      ]
+    },
+    {
+      "name": "OnNoteOff",
+      "doc": "A note ended (a note on with velocity 0 counts as one).",
+      "args": [
+        "channel",
+        "note",
+        "velocity"
+      ]
+    },
+    {
+      "name": "OnCC",
+      "doc": "A controller changed (value 0 to 127).",
+      "args": [
+        "channel",
+        "controller",
+        "value"
+      ]
+    },
+    {
+      "name": "OnProgramChange",
+      "doc": "A program change arrived.",
+      "args": [
+        "channel",
+        "program"
+      ]
+    },
+    {
+      "name": "OnPitchBend",
+      "doc": "A pitch bend arrived, centred on 0 (-8192 to 8191).",
+      "args": [
+        "channel",
+        "bend"
+      ]
+    }
+  ],
+  "enums": [
+    {
+      "name": "CtrlSource",
+      "doc": "What a routing slot reads (X: per-note pitch bend, Y: CC 74 and mod wheel, Z: pressure).",
+      "entries": [
+        {
+          "name": "X",
+          "value": 0
+        },
+        {
+          "name": "Y",
+          "value": 1
+        },
+        {
+          "name": "Z",
+          "value": 2
+        },
+        {
+          "name": "Velocity",
+          "value": 3
+        },
+        {
+          "name": "Note",
+          "value": 4
+        },
+        {
+          "name": "EnvelopeFilter",
+          "value": 5
+        },
+        {
+          "name": "EnvelopeAmplitude",
+          "value": 6
+        }
+      ]
+    },
+    {
+      "name": "CtrlCurve",
+      "doc": "Shape applied to the source before it is scaled.",
+      "entries": [
+        {
+          "name": "CubeRoot",
+          "value": 0
+        },
+        {
+          "name": "SquareRoot",
+          "value": 1
+        },
+        {
+          "name": "Linear",
+          "value": 2
+        },
+        {
+          "name": "Square",
+          "value": 3
+        },
+        {
+          "name": "Cube",
+          "value": 4
+        }
+      ]
+    },
+    {
+      "name": "CtrlTarget",
+      "doc": "What a routing slot moves.",
+      "entries": [
+        {
+          "name": "None",
+          "value": 0
+        },
+        {
+          "name": "PitchBend",
+          "value": 1
+        },
+        {
+          "name": "PitchBendSecondary",
+          "value": 2
+        },
+        {
+          "name": "FilterCutoff",
+          "value": 3
+        },
+        {
+          "name": "FilterResonance",
+          "value": 4
+        },
+        {
+          "name": "Pan",
+          "value": 5
+        },
+        {
+          "name": "OscFreq2",
+          "value": 6
+        },
+        {
+          "name": "OscFreq3",
+          "value": 7
+        },
+        {
+          "name": "OscLevel1",
+          "value": 8
+        },
+        {
+          "name": "OscLevel2",
+          "value": 9
+        },
+        {
+          "name": "OscLevel3",
+          "value": 10
+        },
+        {
+          "name": "LfoLevel",
+          "value": 11
+        },
+        {
+          "name": "SustainVol",
+          "value": 12
+        },
+        {
+          "name": "AttackTime",
+          "value": 13
+        },
+        {
+          "name": "DecayTime",
+          "value": 14
+        },
+        {
+          "name": "ReleaseTime",
+          "value": 15
+        },
+        {
+          "name": "Distortion",
+          "value": 16
+        }
+      ]
+    },
+    {
+      "name": "CtrlValueType",
+      "doc": "Abs: the source runs 0 to 1; BiPolar: it runs -1 to 1 around the middle.",
+      "entries": [
+        {
+          "name": "Abs",
+          "value": 0
+        },
+        {
+          "name": "BiPolar",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "name": "OscWaveform",
+      "doc": "Oscillator waveforms.",
+      "entries": [
+        {
+          "name": "Triangle",
+          "value": 0
+        },
+        {
+          "name": "SharkFin",
+          "value": 1
+        },
+        {
+          "name": "Saw",
+          "value": 2
+        },
+        {
+          "name": "Square",
+          "value": 3
+        },
+        {
+          "name": "White",
+          "value": 4
+        }
+      ]
+    },
+    {
+      "name": "LfoWaveform",
+      "doc": "LFO waveforms.",
+      "entries": [
+        {
+          "name": "Sine",
+          "value": 0
+        },
+        {
+          "name": "Triangle",
+          "value": 1
+        },
+        {
+          "name": "Saw",
+          "value": 2
+        },
+        {
+          "name": "Square",
+          "value": 3
+        },
+        {
+          "name": "Noise",
+          "value": 4
+        },
+        {
+          "name": "SampleHoldNoise",
+          "value": 5
+        },
+        {
+          "name": "SampleHoldFlipFlop",
+          "value": 6
+        },
+        {
+          "name": "BrownNoise",
+          "value": 7
+        }
+      ]
+    }
+  ],
+  "libraries": [],
+  "examples": [
+    {
+      "id": "01-a-patch-in-onstart",
+      "file": "examples/01-a-patch-in-onstart.lua",
+      "title": "A patch in OnStart",
+      "summary": "The smallest useful patch: a saw through a lowpass filter with an amplitude envelope. Shows that a patch is a list of Set... commands in OnStart, and that what a script leaves out starts from a blank patch. Change the waveform (OscWaveform.Square ...), the cutoff (a note number) or the release.",
+      "code": "-- A patch in OnStart\n-- The smallest useful patch: a saw through a lowpass filter with an amplitude envelope. Shows that a patch is a list of\n-- Set... commands in OnStart, and that what a script leaves out starts from a blank patch. Change the waveform\n-- (OscWaveform.Square ...), the cutoff (a note number) or the release.\nfunction OnStart()\n    SetVolume(-6)\n    SetOscillator(0, { waveform = OscWaveform.Saw, level = 0.6 })\n    SetAmpEnvelope({ attackMs = 5, decayMs = 200, sustainLevel = 0.7, releaseMs = 250 })\n    SetFilter({ cutoff = 80, resonance = 0.2, type = \"LP4\" })\nend\n",
+      "uses": [
+        "OnStart",
+        "SetVolume",
+        "SetOscillator",
+        "OscWaveform",
+        "SetAmpEnvelope",
+        "SetFilter"
+      ]
+    },
+    {
+      "id": "02-mod-wheel-to-the-filter",
+      "file": "examples/02-mod-wheel-to-the-filter.lua",
+      "title": "Mod wheel to the filter",
+      "summary": "The mod wheel (the Y source) opens the filter. Shows SetCtrlSlot: a slot reads a source, shapes it with a curve, scales it by the depth and adds it to a target. Start with the wheel down and a dark filter, then push it up. Change the target (CtrlTarget.Pan ...) or the depth.",
+      "code": "-- Mod wheel to the filter\n-- The mod wheel (the Y source) opens the filter. Shows SetCtrlSlot: a slot reads a source, shapes it with a curve,\n-- scales it by the depth and adds it to a target. Start with the wheel down and a dark filter, then push it up. Change\n-- the target (CtrlTarget.Pan ...) or the depth.\nfunction OnStart()\n    SetVolume(-6)\n    SetOscillator(0, { waveform = OscWaveform.Saw, level = 0.6 })\n    SetOscillator(1, { waveform = OscWaveform.Saw, level = 0.4, detune = 0.12 })\n    SetAmpEnvelope({ attackMs = 5, decayMs = 200, sustainLevel = 0.7, releaseMs = 250 })\n    SetFilter({ cutoff = 40, resonance = 0.3 })\n    SetCtrlSlot(0, {\n        source = CtrlSource.Y,\n        curve = CtrlCurve.Linear,\n        target = CtrlTarget.FilterCutoff,\n        valueType = CtrlValueType.Abs,\n        depth = 0.8,\n    })\nend\n",
+      "uses": [
+        "OnStart",
+        "SetVolume",
+        "SetOscillator",
+        "OscWaveform",
+        "SetAmpEnvelope",
+        "SetFilter",
+        "SetCtrlSlot",
+        "CtrlSource",
+        "CtrlCurve",
+        "CtrlTarget",
+        "CtrlValueType"
+      ]
+    },
+    {
+      "id": "03-pressure-to-resonance",
+      "file": "examples/03-pressure-to-resonance.lua",
+      "title": "Pressure to resonance",
+      "summary": "Pressing a key harder (the Z source, channel or MPE pressure) raises the resonance, and the velocity of the key brightens the note. Shows two slots with different sources and value types: velocity 64 leaves the cutoff where it is (BiPolar), pressure starts at nothing (Abs). Change the depth to hear less or more.",
+      "code": "-- Pressure to resonance\n-- Pressing a key harder (the Z source, channel or MPE pressure) raises the resonance, and the velocity of the key\n-- brightens the note. Shows two slots with different sources and value types: velocity 64 leaves the cutoff where it\n-- is (BiPolar), pressure starts at nothing (Abs). Change the depth to hear less or more.\nfunction OnStart()\n    SetVolume(-6)\n    SetOscillator(0, { waveform = OscWaveform.Square, level = 0.6, pwm = 0.2 })\n    SetAmpEnvelope({ attackMs = 3, decayMs = 150, sustainLevel = 0.8, releaseMs = 150 })\n    SetFilter({ cutoff = 60, resonance = 0.2 })\n    SetCtrlSlot(0, {\n        source = CtrlSource.Z,\n        curve = CtrlCurve.SquareRoot,\n        target = CtrlTarget.FilterResonance,\n        valueType = CtrlValueType.Abs,\n        depth = 0.6,\n    })\n    SetCtrlSlot(1, {\n        source = CtrlSource.Velocity,\n        curve = CtrlCurve.Linear,\n        target = CtrlTarget.FilterCutoff,\n        valueType = CtrlValueType.BiPolar,\n        depth = 0.3,\n    })\nend\n",
+      "uses": [
+        "OnStart",
+        "SetVolume",
+        "SetOscillator",
+        "OscWaveform",
+        "SetAmpEnvelope",
+        "SetFilter",
+        "SetCtrlSlot",
+        "CtrlSource",
+        "CtrlCurve",
+        "CtrlTarget",
+        "CtrlValueType"
+      ]
+    },
+    {
+      "id": "04-an-effects-chain",
+      "file": "examples/04-an-effects-chain.lua",
+      "title": "An effects chain",
+      "summary": "A patch with the four effects of the effects bus: distortion, chorus, phaser and reverb. Shows that the effects are set like the rest of the patch, and that a mix of 0 (or -100 dB for the reverb) switches one off. Set the effects you do not want to their off values to hear each one on its own.",
+      "code": "-- An effects chain\n-- A patch with the four effects of the effects bus: distortion, chorus, phaser and reverb. Shows that the effects are\n-- set like the rest of the patch, and that a mix of 0 (or -100 dB for the reverb) switches one off. Set the effects you\n-- do not want to their off values to hear each one on its own.\nfunction OnStart()\n    SetVolume(-9)\n    SetOscillator(0, { waveform = OscWaveform.Saw, level = 0.6 })\n    SetOscillator(1, { waveform = OscWaveform.Saw, level = 0.4, detune = 0.1 })\n    SetAmpEnvelope({ attackMs = 10, decayMs = 300, sustainLevel = 0.6, releaseMs = 400 })\n    SetFilter({ cutoff = 70, resonance = 0.15 })\n    SetDistortion(2)\n    SetChorus({ rateHz = 0.5, depth = 0.4, mix = 0.4 })\n    SetPhaser({ rateHz = 0.2, depth = 0.5, feedback = 0.3, mix = 0.3 })\n    SetReverb({ sizeMeters = 15, decayMs = 2000, dryDb = 0, mixDb = -12 })\nend\n",
+      "uses": [
+        "OnStart",
+        "SetVolume",
+        "SetOscillator",
+        "OscWaveform",
+        "SetAmpEnvelope",
+        "SetFilter",
+        "SetDistortion",
+        "SetChorus",
+        "SetPhaser",
+        "SetReverb"
+      ]
+    },
+    {
+      "id": "05-vibrato-with-the-lfo",
+      "file": "examples/05-vibrato-with-the-lfo.lua",
+      "title": "Vibrato with the LFO",
+      "summary": "A slow sine LFO moves the pitch of all oscillators by a quarter of a semitone each way, 5.5 times a second. Shows SetLfo: oscDepth is pitch in semitones, filterDepth moves the cutoff instead. Change speedHz and oscDepth, or move the depth to filterDepth for a wobble of the tone instead of the pitch.",
+      "code": "-- Vibrato with the LFO\n-- A slow sine LFO moves the pitch of all oscillators by a quarter of a semitone each way, 5.5 times a second. Shows\n-- SetLfo: oscDepth is pitch in semitones, filterDepth moves the cutoff instead. Change speedHz and oscDepth, or move\n-- the depth to filterDepth for a wobble of the tone instead of the pitch.\nfunction OnStart()\n    SetVolume(-6)\n    SetOscillator(0, { waveform = OscWaveform.Triangle, level = 0.7 })\n    SetAmpEnvelope({ attackMs = 30, decayMs = 200, sustainLevel = 0.8, releaseMs = 300 })\n    SetFilter({ cutoff = 90, resonance = 0.1 })\n    SetLfo({ waveform = LfoWaveform.Sine, speedHz = 5.5, oscDepth = 0.25, filterDepth = 0 })\nend\n",
+      "uses": [
+        "OnStart",
+        "SetVolume",
+        "SetOscillator",
+        "OscWaveform",
+        "SetAmpEnvelope",
+        "SetFilter",
+        "SetLfo",
+        "LfoWaveform"
+      ]
+    },
+    {
+      "id": "06-patches-by-program-change",
+      "file": "examples/06-patches-by-program-change.lua",
+      "title": "Patches by program change",
+      "summary": "Program change 0 gives a bright saw, 1 a dark square with a long release. Shows OnProgramChange and that the commands work from a hook too, not only in OnStart. Add a table entry for each patch.",
+      "code": "-- Patches by program change\n-- Program change 0 gives a bright saw, 1 a dark square with a long release. Shows OnProgramChange and that the\n-- commands work from a hook too, not only in OnStart. Add a table entry for each patch.\nlocal patches = {\n    [0] = function()\n        SetOscillator(0, { waveform = OscWaveform.Saw, level = 0.6 })\n        SetAmpEnvelope({ attackMs = 3, decayMs = 150, sustainLevel = 0.7, releaseMs = 120 })\n        SetFilter({ cutoff = 90, resonance = 0.2 })\n    end,\n    [1] = function()\n        SetOscillator(0, { waveform = OscWaveform.Square, level = 0.6, pwm = 0.3 })\n        SetAmpEnvelope({ attackMs = 40, decayMs = 400, sustainLevel = 0.6, releaseMs = 900 })\n        SetFilter({ cutoff = 50, resonance = 0.3 })\n    end,\n}\n\nfunction OnStart()\n    SetVolume(-6)\n    patches[0]()\nend\n\nfunction OnProgramChange(channel, program)\n    local patch = patches[program]\n    if patch then\n        patch()\n    end\nend\n",
+      "uses": [
+        "SetOscillator",
+        "OscWaveform",
+        "SetAmpEnvelope",
+        "SetFilter",
+        "OnStart",
+        "SetVolume",
+        "OnProgramChange"
+      ]
+    },
+    {
+      "id": "07-wave-morph-on-a-controller",
+      "file": "examples/07-wave-morph-on-a-controller.lua",
+      "title": "Wave morph on a controller",
+      "summary": "Controller 1 (the mod wheel) moves oscillator 0 from a triangle through a square to a saw. Shows SetWaveMorph called from OnCC while notes sound, and the value 0 to 127 scaled to 0 to 1. Change the controller number or the waveforms.",
+      "code": "-- Wave morph on a controller\n-- Controller 1 (the mod wheel) moves oscillator 0 from a triangle through a square to a saw. Shows SetWaveMorph called\n-- from OnCC while notes sound, and the value 0 to 127 scaled to 0 to 1. Change the controller number or the waveforms.\nfunction OnStart()\n    SetVolume(-6)\n    SetOscillator(0, { waveform = OscWaveform.Triangle, level = 0.7 })\n    SetWaveMorph(0, { waveform2 = OscWaveform.Square, waveform3 = OscWaveform.Saw, morph = 0 })\n    SetAmpEnvelope({ attackMs = 5, decayMs = 200, sustainLevel = 0.8, releaseMs = 250 })\n    SetFilter({ cutoff = 90, resonance = 0.1 })\nend\n\nfunction OnCC(channel, controller, value)\n    if controller == 1 then\n        SetWaveMorph(0, { waveform2 = OscWaveform.Square, waveform3 = OscWaveform.Saw, morph = value / 127 })\n    end\nend\n",
+      "uses": [
+        "OnStart",
+        "SetVolume",
+        "SetOscillator",
+        "OscWaveform",
+        "SetWaveMorph",
+        "SetAmpEnvelope",
+        "SetFilter",
+        "OnCC"
+      ]
+    }
+  ],
+  "scripts": [
+    {
+      "id": "4-ever-mini",
+      "file": "4-ever-mini.lua",
+      "title": "Factory patch of Morphexsynth, from AbacDsp (examples/morphexsynth/factory-patches/4 Ever Mini.json); SetVolume is the",
+      "summary": "level of the patch, a field of that file there. The slots for pitch bend (X), pressure (Z) and velocity are this repository's addition to the AbacDsp patch, so that a keyboard on channel 1 and an MPE controller both play it expressively.",
+      "code": "-- Factory patch of Morphexsynth, from AbacDsp (examples/morphexsynth/factory-patches/4 Ever Mini.json); SetVolume is the\n-- level of the patch, a field of that file there.\n-- The slots for pitch bend (X), pressure (Z) and velocity are this repository's addition to the AbacDsp patch, so that\n-- a keyboard on channel 1 and an MPE controller both play it expressively.\nimport \"constants\"\n\nfunction OnStart()\n    SetVolume(-2.401)\n    SetOscillator(0, { waveform = 3, level = 0.6786, pitchFactor = 0.5, pwm = 0.3 })\n    SetOscillator(1, { waveform = 1, level = 0.7833, detune = -0.1724, pitchFactor = 0.5 })\n    SetOscillator(2, { waveform = 4, level = 0.3108 })  -- noise\n\n    SetAmpEnvelope({ attackMs = 2, decayMs = 9.89, sustainLevel = 1, releaseMs = 9.89 })\n    SetFilterEnvelope({ attackMs = 41.39, decayMs = 374.1, sustainLevel = 0.2814, releaseMs = 374.1 })\n    SetFilter({ cutoff = 54.49, resonance = 0.4807, type = \"LP4\" })\n\n    -- Filter envelope has no cutoff path of its own yet (engine gap, see\n    -- port-minimoog-presets.md Gap 2) - routed through the MPE matrix instead.\n    SetCtrlSlot(0, { source = 5, curve = 2, target = 3, valueType = 0, depth = 0.4058 })\n\n    -- osc3 is Minimoog's free-running pitch-wobble modulator (oscMod=1,\n    -- filtModEnable=0), approximated via the LFO's oscDepth.\n    SetLfo({ waveform = 1, speedHz = 1.461, oscDepth = 0.06829, keyFollow = 0 })\n\n    -- X (pitch bend): standard +/-2 semitones\n    SetCtrlSlot(1, { source = CtrlSource.X, curve = CtrlCurve.Linear, target = CtrlTarget.PitchBend,\n                     valueType = CtrlValueType.BiPolar, depth = 2 / 12 })\n\n    -- Z (pressure): aftertouch opens the filter\n    SetCtrlSlot(2, { source = CtrlSource.Z, curve = CtrlCurve.Linear, target = CtrlTarget.FilterCutoff,\n                     valueType = CtrlValueType.Abs, depth = 0.4 })\n\n    -- Velocity: harder keys are brighter, soft ones darker (velocity 64 leaves the patch as it is)\n    SetCtrlSlot(3, { source = CtrlSource.Velocity, curve = CtrlCurve.Linear, target = CtrlTarget.FilterCutoff,\n                     valueType = CtrlValueType.BiPolar, depth = 0.3 })\nend\n",
+      "uses": [
+        "OnStart",
+        "SetVolume",
+        "SetOscillator",
+        "SetAmpEnvelope",
+        "SetFilterEnvelope",
+        "SetFilter",
+        "SetCtrlSlot",
+        "SetLfo",
+        "CtrlSource",
+        "CtrlCurve",
+        "CtrlTarget",
+        "CtrlValueType"
+      ]
+    },
+    {
+      "id": "airy-pad",
+      "file": "airy-pad.lua",
+      "title": "Airy Pad: three detuned saws with a slow attack/release and a slow filter sweep,",
+      "summary": "widened by the master chorus and set in space by the master reverb. The mod wheel (Y) opens the filter for a gentle brightening swell. Factory patch of Morphexsynth, from AbacDsp (examples/morphexsynth/factory-patches/Airy Pad.json); SetVolume is the level of the patch, a field of that file there. The slots for pitch bend (X), pressure (Z) and velocity are this repository's addition to the AbacDsp patch, so that a keyboard on channel 1 and an MPE controller both play it expressively.",
+      "code": "-- Airy Pad: three detuned saws with a slow attack/release and a slow filter sweep,\n-- widened by the master chorus and set in space by the master reverb. The mod\n-- wheel (Y) opens the filter for a gentle brightening swell.\n-- Factory patch of Morphexsynth, from AbacDsp (examples/morphexsynth/factory-patches/Airy Pad.json); SetVolume is the\n-- level of the patch, a field of that file there.\n-- The slots for pitch bend (X), pressure (Z) and velocity are this repository's addition to the AbacDsp patch, so that\n-- a keyboard on channel 1 and an MPE controller both play it expressively.\nimport \"constants\"\n\nfunction OnStart()\n    SetVolume(-6.0)\n    SetOscillator(0, { waveform = OscWaveform.Saw, level = 0.5, detune = 0.15, pitchFactor = 1.0 })\n    SetOscillator(1, { waveform = OscWaveform.Saw, level = 0.5, detune = -0.15, pitchFactor = 1.0 })\n    SetOscillator(2, { waveform = OscWaveform.Triangle, level = 0.3, pitchFactor = 2.0 })\n\n    SetAmpEnvelope({ attackMs = 800, decayMs = 400, sustainLevel = 0.8, releaseMs = 1200 })\n    SetFilterEnvelope({ attackMs = 1500, decayMs = 500, sustainLevel = 0.7, releaseMs = 1000, contour = 1.6 })\n    SetFilter({ cutoff = 66, resonance = 0.15, type = \"LP4\" })\n    SetPitchEnvelope({ attackMs = 0, decayMs = 0, depthSemitones = 0, glideMsPerOctave = 0 })\n    SetDistortion(0)\n\n    -- filterDepth is semitones-ish; 0.5 swung the cutoff far too widely for a slow\n    -- pad wash, so this is trimmed to a gentle drift.\n    SetLfo({ waveform = LfoWaveform.Triangle, speedHz = 0.18, filterDepth = 0.125, oscDepth = 0, keyFollow = 0 })\n\n    SetChorus({ rateHz = 0.5, depth = 0.6, mix = 0.6 })\n    SetReverb({ sizeMeters = 24, decayMs = 3200, dryDb = 0, mixDb = -10 })\n    SetPhaser({ rateHz = 0.15, depth = 0.6, feedback = 0.15, mix = 0.2 })\n\n    -- Y (mod wheel / slide): slow additional brightening\n    SetCtrlSlot(0, { source = CtrlSource.Y, curve = CtrlCurve.Linear, target = CtrlTarget.FilterCutoff,\n                     valueType = CtrlValueType.Abs, depth = 0.7 })\n\n    -- X (pitch bend): standard +/-2 semitones\n    SetCtrlSlot(1, { source = CtrlSource.X, curve = CtrlCurve.Linear, target = CtrlTarget.PitchBend,\n                     valueType = CtrlValueType.BiPolar, depth = 2 / 12 })\n\n    -- Z (pressure): aftertouch opens the filter\n    SetCtrlSlot(2, { source = CtrlSource.Z, curve = CtrlCurve.Linear, target = CtrlTarget.FilterCutoff,\n                     valueType = CtrlValueType.Abs, depth = 0.4 })\n\n    -- Velocity: harder keys are brighter, soft ones darker (velocity 64 leaves the patch as it is)\n    SetCtrlSlot(3, { source = CtrlSource.Velocity, curve = CtrlCurve.Linear, target = CtrlTarget.FilterCutoff,\n                     valueType = CtrlValueType.BiPolar, depth = 0.25 })\nend\n",
+      "uses": [
+        "OnStart",
+        "SetVolume",
+        "SetOscillator",
+        "OscWaveform",
+        "SetAmpEnvelope",
+        "SetFilterEnvelope",
+        "SetFilter",
+        "SetPitchEnvelope",
+        "SetDistortion",
+        "SetLfo",
+        "LfoWaveform",
+        "SetChorus",
+        "SetReverb",
+        "SetPhaser",
+        "SetCtrlSlot",
+        "CtrlSource",
+        "CtrlCurve",
+        "CtrlTarget",
+        "CtrlValueType"
+      ]
+    },
+    {
+      "id": "crystal-bells",
+      "file": "crystal-bells.lua",
+      "title": "Crystal Bells: real bells ring with inharmonic partials, not a harmonic",
+      "summary": "series - hum (an octave below the strike pitch), prime (the strike pitch), and tierce (a minor third above) dominate what's actually heard. The 3 oscillators cover those (mellow Triangle, not bright Square/Saw); high filter resonance adds a 4th, self-ringing partial on the strike, and a strong positive filter-envelope contour lets that brightness decay away as the bell mellows, rather than staying bright forever. Factory patch of Morphexsynth, from AbacDsp (examples/morphexsynth/factory-patches/Crystal Bells.json); SetVolume is the level of the patch, a field of that file there. The slots for pitch bend (X), pressure (Z) and velocity are this repository's addition to the AbacDsp patch, so that a keyboard on channel 1 and an MPE controller both play it expressively.",
+      "code": "-- Crystal Bells: real bells ring with inharmonic partials, not a harmonic\n-- series - hum (an octave below the strike pitch), prime (the strike pitch),\n-- and tierce (a minor third above) dominate what's actually heard. The 3\n-- oscillators cover those (mellow Triangle, not bright Square/Saw); high\n-- filter resonance adds a 4th, self-ringing partial on the strike, and a\n-- strong positive filter-envelope contour lets that brightness decay away\n-- as the bell mellows, rather than staying bright forever.\n-- Factory patch of Morphexsynth, from AbacDsp (examples/morphexsynth/factory-patches/Crystal Bells.json); SetVolume is the\n-- level of the patch, a field of that file there.\n-- The slots for pitch bend (X), pressure (Z) and velocity are this repository's addition to the AbacDsp patch, so that\n-- a keyboard on channel 1 and an MPE controller both play it expressively.\nimport \"constants\"\n\nfunction OnStart()\n    SetVolume(-5.0)\n    -- hum: an octave below the strike pitch, detuned for a slow natural beat\n    SetOscillator(0, { waveform = OscWaveform.Triangle, level = 0.55, detune = 0.04, pitchFactor = 0.5 })\n    -- prime: the strike pitch itself\n    SetOscillator(1, { waveform = OscWaveform.Triangle, level = 0.6, detune = -0.03, pitchFactor = 1.0 })\n    -- tierce: a minor third above prime - the classic \"bell\" inharmonicity\n    SetOscillator(2, { waveform = OscWaveform.Triangle, level = 0.35, pitchFactor = 1.2 })\n\n    SetAmpEnvelope({ attackMs = 2, decayMs = 2200, sustainLevel = 0, releaseMs = 2200 })\n    -- Bright at the strike, mellowing as it rings down: a fairly closed base\n    -- cutoff, with a strong positive contour supplying the initial clang.\n    SetFilterEnvelope({ attackMs = 2, decayMs = 900, sustainLevel = 0, releaseMs = 900, contour = 3.5 })\n    -- Resonance held high (not self-oscillating) so the filter itself rings at\n    -- its own cutoff on the strike transient - a cheap 4th, pitched partial.\n    SetFilter({ cutoff = 62, resonance = 0.72, type = \"LP4\" })\n    SetPitchEnvelope({ attackMs = 0, decayMs = 0, depthSemitones = 0, glideMsPerOctave = 0 })\n    -- A struck bell has no ongoing vibrato.\n    SetLfo({ waveform = LfoWaveform.Sine, speedHz = 3, filterDepth = 0, oscDepth = 0, keyFollow = 0 })\n    SetDistortion(0)\n\n    SetChorus({ rateHz = 0.7, depth = 0.3, mix = 0.25 })\n    SetReverb({ sizeMeters = 30, decayMs = 4000, dryDb = 0, mixDb = -8 })\n    SetPhaser({ rateHz = 0.25, depth = 0.4, feedback = 0.1, mix = 0.12 })\n\n    -- X (pitch bend): standard +/-2 semitones, for the occasional bell glissando\n    SetCtrlSlot(0, { source = CtrlSource.X, curve = CtrlCurve.Linear, target = CtrlTarget.PitchBend,\n                     valueType = CtrlValueType.BiPolar, depth = 2 / 12 })\n\n    -- Z (pressure): aftertouch makes the filter ring louder (the filter envelope has opened the cutoff already)\n    SetCtrlSlot(1, { source = CtrlSource.Z, curve = CtrlCurve.Linear, target = CtrlTarget.FilterResonance,\n                     valueType = CtrlValueType.Abs, depth = 0.1 })\n\n    -- Velocity: harder keys are brighter, soft ones darker (velocity 64 leaves the patch as it is)\n    SetCtrlSlot(2, { source = CtrlSource.Velocity, curve = CtrlCurve.Linear, target = CtrlTarget.FilterCutoff,\n                     valueType = CtrlValueType.BiPolar, depth = 0.5 })\nend\n",
+      "uses": [
+        "OnStart",
+        "SetVolume",
+        "SetOscillator",
+        "OscWaveform",
+        "SetAmpEnvelope",
+        "SetFilterEnvelope",
+        "SetFilter",
+        "SetPitchEnvelope",
+        "SetLfo",
+        "LfoWaveform",
+        "SetDistortion",
+        "SetChorus",
+        "SetReverb",
+        "SetPhaser",
+        "SetCtrlSlot",
+        "CtrlSource",
+        "CtrlCurve",
+        "CtrlTarget",
+        "CtrlValueType"
+      ]
+    },
+    {
+      "id": "cutting-lead",
+      "file": "cutting-lead.lua",
+      "title": "Cutting Lead: two detuned unison saws through a bright, open filter, with a",
+      "summary": "subtle always-on LFO vibrato. Z (pressure) and the mod wheel (Y) both brighten the filter for expressive lead lines; X bends a standard +/-2 semitones. Factory patch of Morphexsynth, from AbacDsp (examples/morphexsynth/factory-patches/Cutting Lead.json); SetVolume is the level of the patch, a field of that file there. The slots for pitch bend (X), pressure (Z) and velocity are this repository's addition to the AbacDsp patch, so that a keyboard on channel 1 and an MPE controller both play it expressively.",
+      "code": "-- Cutting Lead: two detuned unison saws through a bright, open filter, with a\n-- subtle always-on LFO vibrato. Z (pressure) and the mod wheel (Y) both brighten\n-- the filter for expressive lead lines; X bends a standard +/-2 semitones.\n-- Factory patch of Morphexsynth, from AbacDsp (examples/morphexsynth/factory-patches/Cutting Lead.json); SetVolume is the\n-- level of the patch, a field of that file there.\n-- The slots for pitch bend (X), pressure (Z) and velocity are this repository's addition to the AbacDsp patch, so that\n-- a keyboard on channel 1 and an MPE controller both play it expressively.\nimport \"constants\"\n\nfunction OnStart()\n    SetVolume(-4.0)\n    SetOscillator(0, { waveform = OscWaveform.Saw, level = 0.5, detune = 0.08, pitchFactor = 1.0 })\n    SetOscillator(1, { waveform = OscWaveform.Saw, level = 0.5, detune = -0.08, pitchFactor = 1.0 })\n    -- A third, centered saw thickens the unison without pulling it off pitch.\n    SetOscillator(2, { waveform = OscWaveform.Saw, level = 0.4, detune = 0, pitchFactor = 1.0 })\n\n    SetAmpEnvelope({ attackMs = 8, decayMs = 60, sustainLevel = 0.9, releaseMs = 150 })\n    SetFilterEnvelope({ attackMs = 5, decayMs = 200, sustainLevel = 0.6, releaseMs = 150, contour = 1.2 })\n    SetFilter({ cutoff = 92, resonance = 0.3, type = \"LP4\" })\n    SetPitchEnvelope({ attackMs = 0, decayMs = 0, depthSemitones = 0, glideMsPerOctave = 0 })\n    -- Subtle vibrato: oscDepth is semitones-ish, so keep this small - anything above\n    -- ~0.02 reads as wobbly rather than a gentle, always-on vibrato.\n    SetLfo({ waveform = LfoWaveform.Sine, speedHz = 5.2, filterDepth = 0, oscDepth = 0.02, keyFollow = 0 })\n    SetDistortion(0)\n\n    SetReverb({ sizeMeters = 14, decayMs = 1400, dryDb = 0, mixDb = -16 })\n    SetChorus({ rateHz = 0.5, depth = 0.3, mix = 0.25 })\n    SetPhaser({ rateHz = 0.3, depth = 0.5, feedback = 0.2, mix = 0.15 })\n\n    -- Z (pressure): aftertouch brightening while a note is held\n    SetCtrlSlot(0, { source = CtrlSource.Z, curve = CtrlCurve.Linear, target = CtrlTarget.FilterCutoff,\n                     valueType = CtrlValueType.Abs, depth = 0.6 })\n    -- Y (mod wheel / slide): brighten further\n    SetCtrlSlot(1, { source = CtrlSource.Y, curve = CtrlCurve.Linear, target = CtrlTarget.FilterCutoff,\n                     valueType = CtrlValueType.Abs, depth = 0.5 })\n    -- X (pitch bend): standard +/-2 semitones\n    SetCtrlSlot(2, { source = CtrlSource.X, curve = CtrlCurve.Linear, target = CtrlTarget.PitchBend,\n                     valueType = CtrlValueType.BiPolar, depth = 2 / 12 })\n\n    -- Z (pressure): aftertouch adds resonance\n    SetCtrlSlot(3, { source = CtrlSource.Z, curve = CtrlCurve.Linear, target = CtrlTarget.FilterResonance,\n                     valueType = CtrlValueType.Abs, depth = 0.25 })\n\n    -- Velocity: harder keys are brighter, soft ones darker (velocity 64 leaves the patch as it is)\n    SetCtrlSlot(4, { source = CtrlSource.Velocity, curve = CtrlCurve.Linear, target = CtrlTarget.FilterCutoff,\n                     valueType = CtrlValueType.BiPolar, depth = 0.3 })\nend\n",
+      "uses": [
+        "OnStart",
+        "SetVolume",
+        "SetOscillator",
+        "OscWaveform",
+        "SetAmpEnvelope",
+        "SetFilterEnvelope",
+        "SetFilter",
+        "SetPitchEnvelope",
+        "SetLfo",
+        "LfoWaveform",
+        "SetDistortion",
+        "SetReverb",
+        "SetChorus",
+        "SetPhaser",
+        "SetCtrlSlot",
+        "CtrlSource",
+        "CtrlCurve",
+        "CtrlTarget",
+        "CtrlValueType"
+      ]
+    },
+    {
+      "id": "grand-stage",
+      "file": "grand-stage.lua",
+      "title": "Grand Stage: a triangle body with a touch of detuned saw edge for hammer",
+      "summary": "brightness, a fast attack and a long natural decay rather than a held plateau. Velocity brightens the tone (harder hit = brighter), pressure opens the filter and the wheel bends; there is no vibrato, which does not suit this voicing. Factory patch of Morphexsynth, from AbacDsp (examples/morphexsynth/factory-patches/Grand Stage.json); SetVolume is the level of the patch, a field of that file there. The slots for pitch bend (X), pressure (Z) and velocity are this repository's addition to the AbacDsp patch, so that a keyboard on channel 1 and an MPE controller both play it expressively.",
+      "code": "-- Grand Stage: a triangle body with a touch of detuned saw edge for hammer\n-- brightness, a fast attack and a long natural decay rather than a held plateau.\n-- Velocity brightens the tone (harder hit = brighter), pressure opens the filter and the\n-- wheel bends; there is no vibrato, which does not suit this voicing.\n-- Factory patch of Morphexsynth, from AbacDsp (examples/morphexsynth/factory-patches/Grand Stage.json); SetVolume is the\n-- level of the patch, a field of that file there.\n-- The slots for pitch bend (X), pressure (Z) and velocity are this repository's addition to the AbacDsp patch, so that\n-- a keyboard on channel 1 and an MPE controller both play it expressively.\nimport \"constants\"\n\nfunction OnStart()\n    SetVolume(-3.0)\n    SetOscillator(0, { waveform = OscWaveform.Triangle, level = 0.65, pitchFactor = 1.0 })\n    SetOscillator(1, { waveform = OscWaveform.Saw, level = 0.2, detune = 0.05, pitchFactor = 1.0 })\n    -- A quiet octave-up layer, for extra harmonic complexity in the hammer strike.\n    SetOscillator(2, { waveform = OscWaveform.Square, level = 0.1, pitchFactor = 2.0 })\n\n    SetAmpEnvelope({ attackMs = 2, decayMs = 3500, sustainLevel = 0.15, releaseMs = 250 })\n    SetFilterEnvelope({ attackMs = 2, decayMs = 2000, sustainLevel = 0.3, releaseMs = 250, contour = 0.8 })\n    SetFilter({ cutoff = 88, resonance = 0.05, type = \"LP4\" })\n    SetPitchEnvelope({ attackMs = 0, decayMs = 0, depthSemitones = 0, glideMsPerOctave = 0 })\n    -- No vibrato - matches this voicing's own \"deliberately static\" design.\n    SetLfo({ waveform = LfoWaveform.Sine, speedHz = 4, filterDepth = 0, oscDepth = 0, keyFollow = 0 })\n    SetDistortion(0)\n\n    -- A stage-piano's classic pedal chain: gentle room, a touch of tremolo-ish\n    -- chorus and phaser for that electric-piano character.\n    SetReverb({ sizeMeters = 18, decayMs = 2000, dryDb = 0, mixDb = -14 })\n    SetChorus({ rateHz = 0.5, depth = 0.4, mix = 0.3 })\n    SetPhaser({ rateHz = 0.25, depth = 0.4, feedback = 0.15, mix = 0.15 })\n\n    -- Velocity: harder hits are brighter\n    SetCtrlSlot(0, { source = CtrlSource.Velocity, curve = CtrlCurve.Linear, target = CtrlTarget.FilterCutoff,\n                     valueType = CtrlValueType.Abs, depth = 0.6 })\n\n    -- X (pitch bend): standard +/-2 semitones\n    SetCtrlSlot(1, { source = CtrlSource.X, curve = CtrlCurve.Linear, target = CtrlTarget.PitchBend,\n                     valueType = CtrlValueType.BiPolar, depth = 2 / 12 })\n\n    -- Z (pressure): aftertouch opens the filter\n    SetCtrlSlot(2, { source = CtrlSource.Z, curve = CtrlCurve.Linear, target = CtrlTarget.FilterCutoff,\n                     valueType = CtrlValueType.Abs, depth = 0.4 })\nend\n",
+      "uses": [
+        "OnStart",
+        "SetVolume",
+        "SetOscillator",
+        "OscWaveform",
+        "SetAmpEnvelope",
+        "SetFilterEnvelope",
+        "SetFilter",
+        "SetPitchEnvelope",
+        "SetLfo",
+        "LfoWaveform",
+        "SetDistortion",
+        "SetReverb",
+        "SetChorus",
+        "SetPhaser",
+        "SetCtrlSlot",
+        "CtrlSource",
+        "CtrlCurve",
+        "CtrlTarget",
+        "CtrlValueType"
+      ]
+    },
+    {
+      "id": "harp-pluck",
+      "file": "harp-pluck.lua",
+      "title": "Harp Pluck: slightly detuned saw and square, a fast filter-envelope decay for",
+      "summary": "the bright plucked transient, and a small, fast pitch dip on attack for a realistic string-pluck snap. Light chorus adds shimmer; Z lets a sustained pluck grow more resonant. Factory patch of Morphexsynth, from AbacDsp (examples/morphexsynth/factory-patches/Harp Pluck.json); SetVolume is the level of the patch, a field of that file there. The slots for pitch bend (X), pressure (Z) and velocity are this repository's addition to the AbacDsp patch, so that a keyboard on channel 1 and an MPE controller both play it expressively.",
+      "code": "-- Harp Pluck: slightly detuned saw and square, a fast filter-envelope decay for\n-- the bright plucked transient, and a small, fast pitch dip on attack for a\n-- realistic string-pluck snap. Light chorus adds shimmer; Z lets a sustained\n-- pluck grow more resonant.\n-- Factory patch of Morphexsynth, from AbacDsp (examples/morphexsynth/factory-patches/Harp Pluck.json); SetVolume is the\n-- level of the patch, a field of that file there.\n-- The slots for pitch bend (X), pressure (Z) and velocity are this repository's addition to the AbacDsp patch, so that\n-- a keyboard on channel 1 and an MPE controller both play it expressively.\nimport \"constants\"\n\nfunction OnStart()\n    SetVolume(-3.0)\n    SetOscillator(0, { waveform = OscWaveform.Saw, level = 0.5, pitchFactor = 1.0 })\n    SetOscillator(1, { waveform = OscWaveform.Square, level = 0.3, detune = 0.06, pitchFactor = 1.0 })\n    -- An octave-up triangle for a touch of pluck sparkle.\n    SetOscillator(2, { waveform = OscWaveform.Triangle, level = 0.2, pitchFactor = 2.0 })\n\n    SetAmpEnvelope({ attackMs = 2, decayMs = 350, sustainLevel = 0.05, releaseMs = 150 })\n    SetFilterEnvelope({ attackMs = 1, decayMs = 180, sustainLevel = 0, releaseMs = 150, contour = 2.8 })\n    SetFilter({ cutoff = 62, resonance = 0.25, type = \"LP4\" })\n\n    -- A small, fast downward pitch snap on attack, like a plucked string\n    SetPitchEnvelope({ attackMs = 0, decayMs = 25, depthSemitones = -2, glideMsPerOctave = 0 })\n    -- A plucked string has no ongoing vibrato.\n    SetLfo({ waveform = LfoWaveform.Sine, speedHz = 4, filterDepth = 0, oscDepth = 0, keyFollow = 0 })\n    SetDistortion(0)\n\n    SetChorus({ rateHz = 0.8, depth = 0.25, mix = 0.2 })\n    SetReverb({ sizeMeters = 10, decayMs = 900, dryDb = 0, mixDb = -18 })\n    SetPhaser({ rateHz = 0.3, depth = 0.3, feedback = 0.1, mix = 0.1 })\n\n    -- Z (pressure): more resonance the harder a held pluck is pressed\n    SetCtrlSlot(0, { source = CtrlSource.Z, curve = CtrlCurve.Linear, target = CtrlTarget.FilterResonance,\n                     valueType = CtrlValueType.Abs, depth = 0.4 })\n    -- X (pitch bend): modest +/-1 semitone\n    SetCtrlSlot(1, { source = CtrlSource.X, curve = CtrlCurve.Linear, target = CtrlTarget.PitchBend,\n                     valueType = CtrlValueType.BiPolar, depth = 1 / 12 })\n\n    -- Velocity: harder keys are brighter, soft ones darker (velocity 64 leaves the patch as it is)\n    SetCtrlSlot(2, { source = CtrlSource.Velocity, curve = CtrlCurve.Linear, target = CtrlTarget.FilterCutoff,\n                     valueType = CtrlValueType.BiPolar, depth = 0.4 })\nend\n",
+      "uses": [
+        "OnStart",
+        "SetVolume",
+        "SetOscillator",
+        "OscWaveform",
+        "SetAmpEnvelope",
+        "SetFilterEnvelope",
+        "SetFilter",
+        "SetPitchEnvelope",
+        "SetLfo",
+        "LfoWaveform",
+        "SetDistortion",
+        "SetChorus",
+        "SetReverb",
+        "SetPhaser",
+        "SetCtrlSlot",
+        "CtrlSource",
+        "CtrlCurve",
+        "CtrlTarget",
+        "CtrlValueType"
+      ]
+    },
+    {
+      "id": "kick-punch",
+      "file": "kick-punch.lua",
+      "title": "Kick Punch: a low fundamental with a fast pitch drop (the classic kick-drum",
+      "summary": "trick) and a filter that starts bright then slams shut for the click-into-thud character. Percussion, but it answers velocity, pressure and the pitch bend as well. Factory patch of Morphexsynth, from AbacDsp (examples/morphexsynth/factory-patches/Kick Punch.json); SetVolume is the level of the patch, a field of that file there. The slots for pitch bend (X), pressure (Z) and velocity are this repository's addition to the AbacDsp patch, so that a keyboard on channel 1 and an MPE controller both play it expressively.",
+      "code": "-- Kick Punch: a low fundamental with a fast pitch drop (the classic kick-drum\n-- trick) and a filter that starts bright then slams shut for the click-into-thud\n-- character. Percussion, but it answers velocity, pressure and the pitch bend as well.\n-- Factory patch of Morphexsynth, from AbacDsp (examples/morphexsynth/factory-patches/Kick Punch.json); SetVolume is the\n-- level of the patch, a field of that file there.\n-- The slots for pitch bend (X), pressure (Z) and velocity are this repository's addition to the AbacDsp patch, so that\n-- a keyboard on channel 1 and an MPE controller both play it expressively.\nimport \"constants\"\n\nfunction OnStart()\n    SetVolume(-1.0)\n    SetOscillator(0, { waveform = OscWaveform.Triangle, level = 0.9, pitchFactor = 0.5 })\n    SetOscillator(1, { waveform = OscWaveform.White, level = 0.15, pitchFactor = 1.0 })\n    -- An octave-up click layer for beater attack, on top of the noise burst.\n    SetOscillator(2, { waveform = OscWaveform.Triangle, level = 0.2, pitchFactor = 2.0 })\n\n    SetAmpEnvelope({ attackMs = 1, decayMs = 180, sustainLevel = 0, releaseMs = 60 })\n    SetFilterEnvelope({ attackMs = 1, decayMs = 45, sustainLevel = 0, releaseMs = 45, contour = 2.2 })\n    SetFilter({ cutoff = 42, resonance = 0.15, type = \"LP4\" })\n\n    -- The pitch drop that gives a kick its thump\n    SetPitchEnvelope({ attackMs = 0, decayMs = 55, depthSemitones = -30, glideMsPerOctave = 0 })\n    -- A one-shot has no ongoing vibrato.\n    SetLfo({ waveform = LfoWaveform.Sine, speedHz = 5, filterDepth = 0, oscDepth = 0, keyFollow = 0 })\n    SetDistortion(0)\n\n    -- A kick wants to stay phase-coherent and punchy: chorus/phaser off, just a hint\n    -- of room to sit in a mix rather than sound pasted on top.\n    SetReverb({ sizeMeters = 5, decayMs = 300, dryDb = 0, mixDb = -30 })\n    SetChorus({ rateHz = 0.4, depth = 0, mix = 0 })\n    SetPhaser({ rateHz = 0.2, depth = 0, feedback = 0, mix = 0 })\n\n    -- X (pitch bend): standard +/-2 semitones\n    SetCtrlSlot(0, { source = CtrlSource.X, curve = CtrlCurve.Linear, target = CtrlTarget.PitchBend,\n                     valueType = CtrlValueType.BiPolar, depth = 2 / 12 })\n\n    -- Z (pressure): aftertouch opens the filter\n    SetCtrlSlot(1, { source = CtrlSource.Z, curve = CtrlCurve.Linear, target = CtrlTarget.FilterCutoff,\n                     valueType = CtrlValueType.Abs, depth = 0.6 })\n\n    -- Velocity: harder keys are brighter, soft ones darker (velocity 64 leaves the patch as it is)\n    SetCtrlSlot(2, { source = CtrlSource.Velocity, curve = CtrlCurve.Linear, target = CtrlTarget.FilterCutoff,\n                     valueType = CtrlValueType.BiPolar, depth = 0.4 })\nend\n",
+      "uses": [
+        "OnStart",
+        "SetVolume",
+        "SetOscillator",
+        "OscWaveform",
+        "SetAmpEnvelope",
+        "SetFilterEnvelope",
+        "SetFilter",
+        "SetPitchEnvelope",
+        "SetLfo",
+        "LfoWaveform",
+        "SetDistortion",
+        "SetReverb",
+        "SetChorus",
+        "SetPhaser",
+        "SetCtrlSlot",
+        "CtrlSource",
+        "CtrlCurve",
+        "CtrlTarget",
+        "CtrlValueType"
+      ]
+    },
+    {
+      "id": "retro-poly",
+      "file": "retro-poly.lua",
+      "title": "Retro Poly: two detuned saws plus a square sub, moderate attack and full",
+      "summary": "sustain for chords, with the master chorus giving the classic poly-synth ensemble width. The mod wheel (Y) brightens the filter; X bends a standard +/-2 semitones. Factory patch of Morphexsynth, from AbacDsp (examples/morphexsynth/factory-patches/Retro Poly.json); SetVolume is the level of the patch, a field of that file there. The slots for pitch bend (X), pressure (Z) and velocity are this repository's addition to the AbacDsp patch, so that a keyboard on channel 1 and an MPE controller both play it expressively.",
+      "code": "-- Retro Poly: two detuned saws plus a square sub, moderate attack and full\n-- sustain for chords, with the master chorus giving the classic poly-synth\n-- ensemble width. The mod wheel (Y) brightens the filter; X bends a standard\n-- +/-2 semitones.\n-- Factory patch of Morphexsynth, from AbacDsp (examples/morphexsynth/factory-patches/Retro Poly.json); SetVolume is the\n-- level of the patch, a field of that file there.\n-- The slots for pitch bend (X), pressure (Z) and velocity are this repository's addition to the AbacDsp patch, so that\n-- a keyboard on channel 1 and an MPE controller both play it expressively.\nimport \"constants\"\n\nfunction OnStart()\n    SetVolume(-6.0)\n    SetOscillator(0, { waveform = OscWaveform.Saw, level = 0.5, detune = 0.12, pitchFactor = 1.0 })\n    SetOscillator(1, { waveform = OscWaveform.Saw, level = 0.5, detune = -0.12, pitchFactor = 1.0 })\n    SetOscillator(2, { waveform = OscWaveform.Square, level = 0.3, pitchFactor = 0.5 })\n\n    SetAmpEnvelope({ attackMs = 40, decayMs = 200, sustainLevel = 0.85, releaseMs = 400 })\n    SetFilterEnvelope({ attackMs = 30, decayMs = 300, sustainLevel = 0.55, releaseMs = 400, contour = 1.8 })\n    SetFilter({ cutoff = 74, resonance = 0.2, type = \"LP4\" })\n    SetPitchEnvelope({ attackMs = 0, decayMs = 0, depthSemitones = 0, glideMsPerOctave = 0 })\n    SetDistortion(0)\n\n    -- oscDepth is semitones-ish; 0.04 wobbled the ensemble far more than a subtle\n    -- always-on drift should.\n    SetLfo({ waveform = LfoWaveform.Sine, speedHz = 4.8, filterDepth = 0, oscDepth = 0.01, keyFollow = 0 })\n\n    SetChorus({ rateHz = 0.6, depth = 0.5, mix = 0.5 })\n    SetReverb({ sizeMeters = 16, decayMs = 1800, dryDb = 0, mixDb = -14 })\n    SetPhaser({ rateHz = 0.2, depth = 0.5, feedback = 0.2, mix = 0.18 })\n\n    -- Y (mod wheel / slide): brighten the filter\n    SetCtrlSlot(0, { source = CtrlSource.Y, curve = CtrlCurve.Linear, target = CtrlTarget.FilterCutoff,\n                     valueType = CtrlValueType.Abs, depth = 0.6 })\n    -- X (pitch bend): standard +/-2 semitones\n    SetCtrlSlot(1, { source = CtrlSource.X, curve = CtrlCurve.Linear, target = CtrlTarget.PitchBend,\n                     valueType = CtrlValueType.BiPolar, depth = 2 / 12 })\n\n    -- Z (pressure): aftertouch opens the filter\n    SetCtrlSlot(2, { source = CtrlSource.Z, curve = CtrlCurve.Linear, target = CtrlTarget.FilterCutoff,\n                     valueType = CtrlValueType.Abs, depth = 0.5 })\n\n    -- Velocity: harder keys are brighter, soft ones darker (velocity 64 leaves the patch as it is)\n    SetCtrlSlot(3, { source = CtrlSource.Velocity, curve = CtrlCurve.Linear, target = CtrlTarget.FilterCutoff,\n                     valueType = CtrlValueType.BiPolar, depth = 0.3 })\nend\n",
+      "uses": [
+        "OnStart",
+        "SetVolume",
+        "SetOscillator",
+        "OscWaveform",
+        "SetAmpEnvelope",
+        "SetFilterEnvelope",
+        "SetFilter",
+        "SetPitchEnvelope",
+        "SetDistortion",
+        "SetLfo",
+        "LfoWaveform",
+        "SetChorus",
+        "SetReverb",
+        "SetPhaser",
+        "SetCtrlSlot",
+        "CtrlSource",
+        "CtrlCurve",
+        "CtrlTarget",
+        "CtrlValueType"
+      ]
+    },
+    {
+      "id": "section-brass",
+      "file": "section-brass.lua",
+      "title": "Section Brass: two detuned saw/square oscillators with a swelling attack shared",
+      "summary": "between the amp and filter envelopes (contour matched to the swell), like a horn section building in. Z (pressure) adds breath-style brightening while held - the classic MPE wind/brass technique; Y adds bite via resonance. Factory patch of Morphexsynth, from AbacDsp (examples/morphexsynth/factory-patches/Section Brass.json); SetVolume is the level of the patch, a field of that file there. The slots for pitch bend (X), pressure (Z) and velocity are this repository's addition to the AbacDsp patch, so that a keyboard on channel 1 and an MPE controller both play it expressively.",
+      "code": "-- Section Brass: two detuned saw/square oscillators with a swelling attack shared\n-- between the amp and filter envelopes (contour matched to the swell), like a\n-- horn section building in. Z (pressure) adds breath-style brightening while\n-- held - the classic MPE wind/brass technique; Y adds bite via resonance.\n-- Factory patch of Morphexsynth, from AbacDsp (examples/morphexsynth/factory-patches/Section Brass.json); SetVolume is the\n-- level of the patch, a field of that file there.\n-- The slots for pitch bend (X), pressure (Z) and velocity are this repository's addition to the AbacDsp patch, so that\n-- a keyboard on channel 1 and an MPE controller both play it expressively.\nimport \"constants\"\n\nfunction OnStart()\n    SetVolume(-4.0)\n    SetOscillator(0, { waveform = OscWaveform.Saw, level = 0.5, pitchFactor = 1.0 })\n    SetOscillator(1, { waveform = OscWaveform.Square, level = 0.35, detune = 0.1, pitchFactor = 1.0 })\n    -- A third saw, detuned the other way, thickens this into a \"section\" of horns.\n    SetOscillator(2, { waveform = OscWaveform.Saw, level = 0.35, detune = -0.15, pitchFactor = 1.0 })\n\n    SetAmpEnvelope({ attackMs = 80, decayMs = 100, sustainLevel = 0.85, releaseMs = 180 })\n    SetFilterEnvelope({ attackMs = 80, decayMs = 150, sustainLevel = 0.6, releaseMs = 180, contour = 2.0 })\n    SetFilter({ cutoff = 68, resonance = 0.4, type = \"LP4\" })\n    SetPitchEnvelope({ attackMs = 0, decayMs = 0, depthSemitones = 0, glideMsPerOctave = 0 })\n    -- A light, breath-like vibrato - subtle, not a wobble.\n    SetLfo({ waveform = LfoWaveform.Sine, speedHz = 4.5, filterDepth = 0, oscDepth = 0.015, keyFollow = 0 })\n    SetDistortion(0)\n\n    SetReverb({ sizeMeters = 16, decayMs = 1500, dryDb = 0, mixDb = -15 })\n    SetChorus({ rateHz = 0.45, depth = 0.3, mix = 0.2 })\n    SetPhaser({ rateHz = 0.3, depth = 0.35, feedback = 0.15, mix = 0.1 })\n\n    -- Z (pressure): breath-style brightening while a note is held\n    SetCtrlSlot(0, { source = CtrlSource.Z, curve = CtrlCurve.Linear, target = CtrlTarget.FilterCutoff,\n                     valueType = CtrlValueType.Abs, depth = 0.7 })\n    -- Y (mod wheel / slide): extra bite via resonance\n    SetCtrlSlot(1, { source = CtrlSource.Y, curve = CtrlCurve.Linear, target = CtrlTarget.FilterResonance,\n                     valueType = CtrlValueType.Abs, depth = 0.4 })\n    -- X (pitch bend): standard +/-2 semitones, for falls and scoops\n    SetCtrlSlot(2, { source = CtrlSource.X, curve = CtrlCurve.Linear, target = CtrlTarget.PitchBend,\n                     valueType = CtrlValueType.BiPolar, depth = 2 / 12 })\n\n    -- Velocity: harder keys are brighter, soft ones darker (velocity 64 leaves the patch as it is)\n    SetCtrlSlot(3, { source = CtrlSource.Velocity, curve = CtrlCurve.Linear, target = CtrlTarget.FilterCutoff,\n                     valueType = CtrlValueType.BiPolar, depth = 0.4 })\nend\n",
+      "uses": [
+        "OnStart",
+        "SetVolume",
+        "SetOscillator",
+        "OscWaveform",
+        "SetAmpEnvelope",
+        "SetFilterEnvelope",
+        "SetFilter",
+        "SetPitchEnvelope",
+        "SetLfo",
+        "LfoWaveform",
+        "SetDistortion",
+        "SetReverb",
+        "SetChorus",
+        "SetPhaser",
+        "SetCtrlSlot",
+        "CtrlSource",
+        "CtrlCurve",
+        "CtrlTarget",
+        "CtrlValueType"
+      ]
+    },
+    {
+      "id": "warm-bass",
+      "file": "warm-bass.lua",
+      "title": "Warm Bass: classic subtractive bass - square + sub-octave saw through a resonant",
+      "summary": "filter with a fast, punchy envelope sweep. Z (MPE pressure) adds growl via resonance; the mod wheel (Y) brightens the tone; X bends a full octave for slides. Factory patch of Morphexsynth, from AbacDsp (examples/morphexsynth/factory-patches/Warm Bass.json); SetVolume is the level of the patch, a field of that file there. The slots for pitch bend (X), pressure (Z) and velocity are this repository's addition to the AbacDsp patch, so that a keyboard on channel 1 and an MPE controller both play it expressively.",
+      "code": "-- Warm Bass: classic subtractive bass - square + sub-octave saw through a resonant\n-- filter with a fast, punchy envelope sweep. Z (MPE pressure) adds growl via\n-- resonance; the mod wheel (Y) brightens the tone; X bends a full octave for slides.\n-- Factory patch of Morphexsynth, from AbacDsp (examples/morphexsynth/factory-patches/Warm Bass.json); SetVolume is the\n-- level of the patch, a field of that file there.\n-- The slots for pitch bend (X), pressure (Z) and velocity are this repository's addition to the AbacDsp patch, so that\n-- a keyboard on channel 1 and an MPE controller both play it expressively.\nimport \"constants\"\n\nfunction OnStart()\n    SetVolume(-3.0)\n    SetOscillator(0, { waveform = OscWaveform.Square, level = 0.7, pwm = 0.2, pitchFactor = 1.0 })\n    SetOscillator(1, { waveform = OscWaveform.Saw, level = 0.6, pitchFactor = 0.5 })\n    -- A sub an octave below the saw, for low-end weight.\n    SetOscillator(2, { waveform = OscWaveform.Triangle, level = 0.35, pitchFactor = 0.25 })\n\n    SetAmpEnvelope({ attackMs = 2, decayMs = 40, sustainLevel = 0.85, releaseMs = 120 })\n    SetFilterEnvelope({ attackMs = 1, decayMs = 90, sustainLevel = 0.2, releaseMs = 150, contour = 2.6 })\n    SetFilter({ cutoff = 46, resonance = 0.35, type = \"LP4\" })\n    SetPitchEnvelope({ attackMs = 0, decayMs = 0, depthSemitones = 0, glideMsPerOctave = 0 })\n    -- A hint of filter wobble, not vibrato - subtle enough to add motion, not wander pitch.\n    SetLfo({ waveform = LfoWaveform.Triangle, speedHz = 4, filterDepth = 0.1, oscDepth = 0, keyFollow = 0 })\n    SetDistortion(0)\n\n    -- Kept subtle throughout: a bass sits tightest close to dry.\n    SetReverb({ sizeMeters = 8, decayMs = 600, dryDb = 0, mixDb = -24 })\n    SetChorus({ rateHz = 0.4, depth = 0.15, mix = 0.12 })\n    SetPhaser({ rateHz = 0.2, depth = 0.3, feedback = 0.1, mix = 0.08 })\n\n    -- Z (pressure): push harder for more resonance/growl\n    SetCtrlSlot(0, { source = CtrlSource.Z, curve = CtrlCurve.SquareRoot, target = CtrlTarget.FilterResonance,\n                     valueType = CtrlValueType.Abs, depth = 0.5 })\n    -- Y (mod wheel / slide): brighten the tone\n    SetCtrlSlot(1, { source = CtrlSource.Y, curve = CtrlCurve.Linear, target = CtrlTarget.FilterCutoff,\n                     valueType = CtrlValueType.Abs, depth = 0.8 })\n    -- X (pitch bend): a full octave, for classic bass slides\n    SetCtrlSlot(2, { source = CtrlSource.X, curve = CtrlCurve.Linear, target = CtrlTarget.PitchBend,\n                     valueType = CtrlValueType.BiPolar, depth = 1.0 })\n\n    -- Z (pressure): aftertouch opens the filter\n    SetCtrlSlot(3, { source = CtrlSource.Z, curve = CtrlCurve.Linear, target = CtrlTarget.FilterCutoff,\n                     valueType = CtrlValueType.Abs, depth = 0.35 })\n\n    -- Velocity: harder keys are brighter, soft ones darker (velocity 64 leaves the patch as it is)\n    SetCtrlSlot(4, { source = CtrlSource.Velocity, curve = CtrlCurve.Linear, target = CtrlTarget.FilterCutoff,\n                     valueType = CtrlValueType.BiPolar, depth = 0.3 })\nend\n",
+      "uses": [
+        "OnStart",
+        "SetVolume",
+        "SetOscillator",
+        "OscWaveform",
+        "SetAmpEnvelope",
+        "SetFilterEnvelope",
+        "SetFilter",
+        "SetPitchEnvelope",
+        "SetLfo",
+        "LfoWaveform",
+        "SetDistortion",
+        "SetReverb",
+        "SetChorus",
+        "SetPhaser",
+        "SetCtrlSlot",
+        "CtrlSource",
+        "CtrlCurve",
+        "CtrlTarget",
+        "CtrlValueType"
+      ]
+    }
+  ],
+  "guide": "# Writing a Morphexsynth script (guide for an AI assistant)\n\nMorphexsynth is a polyphonic synthesizer with three oscillators, a filter, envelopes, an LFO, a routing matrix and an\neffects bus. Its sound is a Lua script: a list of commands that set the patch, and hooks that react to MIDI. This file\ntells you how to work here. It holds no names, ranges or limits of the API: those are in `API.md` and `constants.lua`\nnext to it, generated from the plugin, and always right. Read them first.\n\n## 1. What a script is, and what is in this folder\n\n- A script is one Lua 5.4 text file. Its top-level code and `OnStart` run once when it is loaded, and the commands they\n  call (`SetOscillator`, `SetFilter`, `SetCtrlSlot`, ...) make **the patch**. The patch starts from a blank one\n  (everything off, no oscillator sounding): a sound needs at least an oscillator with a level, and an amplitude\n  envelope and a filter you can hear. What the script leaves out stays at the blank value.\n- After that the plugin calls the hooks the script defines (`OnNoteOn`, `OnNoteOff`, `OnCC`, `OnProgramChange`,\n  `OnPitchBend`). A hook that is not defined is not called. Commands called from a hook change the sound later, one at\n  a time.\n- Files here: `API.md` (every command, hook, constant and limit), `constants.lua` (the named constants such as\n  `OscWaveform.Saw`, already global in every script), `examples/` (small patches that run as they are) and the ten\n  factory patches (`warm-bass.lua`, `airy-pad.lua`, ...). The factory patches are read only: copy one to start from a\n  complete sound.\n\n## 2. Where a script goes\n\n- On the Dwarf a script is a file `/data/jaypacks/scripts/morphexsynth/user-1.lua` up to `user-8.lua`. Reach it with\n  `ssh root@192.168.51.1` and `scp -O`; the data partition survives a plugin update.\n- Select it with the plugin's Script setting (User 1 to User 8). While a script is selected the Patch setting is ignored.\n  To change a factory patch or an example, copy it to a user slot.\n- A script may `import \"name\"` for another script file of the same folder; `io`, `os`, `require` and `load` do not exist.\n\n## 3. The loop to follow\n\n1. Write the script to a user slot.\n2. The plugin checks the file twice a second and reloads it after a save. Nothing is restarted. The notes that sound are\n   released and the new patch is loaded as a whole.\n3. Read `/data/jaypacks/scripts/morphexsynth/user-1.log` (same name as the script, `.log`). It says whether the load\n   worked, the message with the line of an error, the calls that were ignored, and every line the script wrote with\n   `Log(...)`. The plugin's Script status output shows the same in a number (1 ok, 3 compile error, 4 runtime error,\n   5 over the budget, 6 out of memory).\n4. Play a note and listen. Fix what the log says, or what you hear, and save again.\n\nA script that fails to load (syntax error, error at the top level or in `OnStart`) is rejected and the previous sound\ngoes on, so a typo never silences the synth; but the new script is not running either. Always read the log after a save.\nAn error in a hook ends only that call; the next event runs again.\n\n## 4. Rules in short\n\n- Hooks are global functions with fixed names and argument lists (`API.md`, Hooks). Write `function OnStart()`, not a local.\n- Channels count from 0 in the hooks of this plugin (MIDI channel 1 is 0). Notes are 0 to 127, velocity 1 to 127, pitch\n  bend -8192 to 8191, controller values 0 to 127.\n- Commands take positional arguments (an index, a preset) and, last, an optional table of named fields:\n  `SetOscillator(0, { waveform = OscWaveform.Saw, level = 0.6 })`. The three oscillators are 0 to 2, the routing slots\n  0 to 9.\n- Units: times are in milliseconds (`attackMs`), levels are 0 to 1 unless the API says otherwise, the volume is in dB,\n  the filter cutoff is a note number (60 = middle C, up to 135), pitch depths are in semitones.\n- A filter type is a text (`type = \"LP4\"`), not a constant; the names are listed in `API.md`.\n- The routing matrix is how the player's hands reach the sound: a slot reads a source (X pitch bend, Y mod wheel, Z\n  pressure, Velocity, Note, the envelopes), shapes it with a curve, scales it with the depth and adds it to a target\n  (`CtrlSource`, `CtrlCurve`, `CtrlTarget`, `CtrlValueType` in `constants.lua`). A slot with the target `None` is off.\n- Randomness is `math.random`; it gives the same numbers on every run. Keep state in locals at the top of the script.\n- A hook has a small budget of instructions and milliseconds: no long loops.\n- A number field outside its range is clamped. An integer argument (an oscillator index, a slot, a preset) outside its\n  range, or not whole, makes the call ignored and is written to the log. A field name the command does not know is\n  ignored and logged. A wrong type or a missing argument is an error.\n\n## 5. Mistakes seen most\n\nEach line is a message the plugin writes to the log, and the fix.\n\n| Log says | Cause and fix |\n| --- | --- |\n| `SetOscillator: 'index' = 3 is outside 0..2, call ignored` | There are three oscillators, 0 to 2. |\n| `SetCtrlSlot: 'slot' = 10 is outside 0..9, call ignored` | There are ten routing slots, 0 to 9. |\n| `SetOscillator: unknown field 'wave' is ignored` | The field is `waveform`; take the names from `API.md`. |\n| `SetFilter: unknown filter type 'LP5', call ignored` | A filter type is one of the texts listed in `API.md`. |\n| `SetFilter: 'type' must be a string, not number` | Write the type as text in quotes: `type = \"LP4\"`. |\n| `SetDistortion expects 1 argument(s) and got 0` | A command called without its arguments. |\n| `SetFilter: the last argument must be a table of fields, not number` | Named fields go in braces: `SetFilter({ cutoff = 60 })`. |\n| attempt to index a nil value (global 'OscWaveform') | A misspelt constant. Names are case sensitive. |\n| the script sounds like the previous one | It was rejected at load; the log has the reason. |\n| silence | No oscillator has a level, or the amplitude envelope sustains at 0, or the cutoff is too low. |\n| a hook does nothing | The hook name is misspelt (`OnNoteOn`, not `onNoteOn`), or its channel test counts from 1. |\n\n## 6. The examples\n\n| File | Shows | Uses |\n| --- | --- | --- |\n| `examples/01-a-patch-in-onstart.lua` | the smallest useful patch | OnStart, SetVolume, SetOscillator, SetAmpEnvelope, SetFilter |\n| `examples/02-mod-wheel-to-the-filter.lua` | the mod wheel opens the filter | SetCtrlSlot, CtrlSource, CtrlTarget |\n| `examples/03-pressure-to-resonance.lua` | pressure and velocity shape the sound | SetCtrlSlot, CtrlSource, CtrlValueType |\n| `examples/04-an-effects-chain.lua` | distortion, chorus, phaser and reverb | SetDistortion, SetChorus, SetPhaser, SetReverb |\n| `examples/05-vibrato-with-the-lfo.lua` | a slow LFO on the pitch | SetLfo, LfoWaveform |\n| `examples/06-patches-by-program-change.lua` | program change switches between patches | OnProgramChange, SetOscillator, SetAmpEnvelope, SetFilter |\n| `examples/07-wave-morph-on-a-controller.lua` | a controller morphs the waveform while notes sound | OnCC, SetWaveMorph |\n\nStart from the example closest to the task and change it; each was run in the plugin.\n\n## 7. A prompt to start an assistant\n\nPaste this into an assistant started in this folder (or give it the files):\n\n> Read `AGENTS.md`, `API.md`, `constants.lua` and the files in `examples/`. Write a Morphexsynth script for: (describe\n> the sound and how the hands should shape it). Use only commands, hooks and constants that exist in `API.md`. Save it\n> as `user-1.lua`, copy it to `/data/jaypacks/scripts/morphexsynth/` on the Dwarf, wait two seconds, read `user-1.log`\n> and fix every problem it names. Tell me which controller does what.\n",
+  "sources": [
+    {
+      "path": "dsp/Filters/PoleMixingFilter.h",
+      "sha256": "7354bcec76c1dd3673225b72c034d590e37750a0b8815dc712f3e5945a3ed709"
+    },
+    {
+      "path": "dsp/Generators/SynthLfo.h",
+      "sha256": "bf986ba18fef796c0debe6528421f278fbdec2ba3068effb317677a74831ce5c"
+    },
+    {
+      "path": "dsp/Synthesizer/MpeCurve.h",
+      "sha256": "a237491f9024be39170b2a5c5b4ba8697c13947b5254ae86773c3b69b4190372"
+    },
+    {
+      "path": "dsp/Synthesizer/MpeRouting.h",
+      "sha256": "ca2a3ea61a2685982c7cb77ad61ea0201b4db2f9dec15f836ece3f1eb544667c"
+    },
+    {
+      "path": "plugins/morphexsynth/MorphPatch.h",
+      "sha256": "4c22adc4078067d296e5cced36998da33cdc9d45ee3936ccc28c30b90e02facf"
+    },
+    {
+      "path": "plugins/morphexsynth/MorphexScript.h",
+      "sha256": "019d2431c07495a8b66cb3e2514bca66cd89e2dc3ff98592b54397ca31221a96"
+    },
+    {
+      "path": "plugins/morphexsynth/scripts/4-ever-mini.lua",
+      "sha256": "f14b666805e1e349920f1fe4d35f884f1eaa81918a23a8c78fc3eff910ce29e9"
+    },
+    {
+      "path": "plugins/morphexsynth/scripts/AGENTS.md",
+      "sha256": "f349008eb69da0f302d959622044b83cf99094c29b10b3f3fb0c7126727617c2"
+    },
+    {
+      "path": "plugins/morphexsynth/scripts/airy-pad.lua",
+      "sha256": "0a5a0c3038b4c45d51b08dab9732cb47e17357b4241fa2a4a2605c606d4a6392"
+    },
+    {
+      "path": "plugins/morphexsynth/scripts/crystal-bells.lua",
+      "sha256": "b334d3cf45abf85f24ea1455dbe3c0aa220a3f619df1ba655b94815ec0e43087"
+    },
+    {
+      "path": "plugins/morphexsynth/scripts/cutting-lead.lua",
+      "sha256": "4c44891320639da02c81b6a2a1efab4549fbe8dd2b4a986a3d24a4fb3fd351f3"
+    },
+    {
+      "path": "plugins/morphexsynth/scripts/examples/01-a-patch-in-onstart.lua",
+      "sha256": "d00f68f8760fac4a4f2a0672015a5c534447965e83e760d8874142b706acfa7a"
+    },
+    {
+      "path": "plugins/morphexsynth/scripts/examples/02-mod-wheel-to-the-filter.lua",
+      "sha256": "0b65675c806ec63d45fd0d8c159bea0c64d0e2879e4d7719f41cb54048c31b06"
+    },
+    {
+      "path": "plugins/morphexsynth/scripts/examples/03-pressure-to-resonance.lua",
+      "sha256": "f3dbf25168037bbd85010dfdc61ecb1ad3ac00439e27aa2ee01e2879b910eea3"
+    },
+    {
+      "path": "plugins/morphexsynth/scripts/examples/04-an-effects-chain.lua",
+      "sha256": "6069ac10e22c7f578f48f728fba7442d86be781db8ff760cfcaa1b657be39d1c"
+    },
+    {
+      "path": "plugins/morphexsynth/scripts/examples/05-vibrato-with-the-lfo.lua",
+      "sha256": "e43d13b5c155144fed0800d3386c3fc3a91891f2419f285dab76386c88ca2adf"
+    },
+    {
+      "path": "plugins/morphexsynth/scripts/examples/06-patches-by-program-change.lua",
+      "sha256": "473dc463749178a8d42e28570a348dc47643a6fb554239a5d19839c0bfe1e933"
+    },
+    {
+      "path": "plugins/morphexsynth/scripts/examples/07-wave-morph-on-a-controller.lua",
+      "sha256": "8f54496753c9be73ee527641c209018d18063f7dd28d9bf8007e2738f5f63595"
+    },
+    {
+      "path": "plugins/morphexsynth/scripts/grand-stage.lua",
+      "sha256": "5ab67166cf800053875cd9a1ab81dcbade0b491d2bfb2546585a556eccafb368"
+    },
+    {
+      "path": "plugins/morphexsynth/scripts/harp-pluck.lua",
+      "sha256": "a93c710a3807b005a48c95aa9e40181ccd4bd043e472c0443737ec328ec2ca7a"
+    },
+    {
+      "path": "plugins/morphexsynth/scripts/kick-punch.lua",
+      "sha256": "b9773c6e30895c04db27b7fc65379395a48e6da1f3bad5df12c4b9daeac3a1d4"
+    },
+    {
+      "path": "plugins/morphexsynth/scripts/retro-poly.lua",
+      "sha256": "1032d52747d1d5c2b0d09c364d91718d8cecdf81ba9a6238d54095a13a669774"
+    },
+    {
+      "path": "plugins/morphexsynth/scripts/section-brass.lua",
+      "sha256": "9b1e272806b287e13b42886bed2ddb042000a5a2bde24dbd5f62320b61151422"
+    },
+    {
+      "path": "plugins/morphexsynth/scripts/warm-bass.lua",
+      "sha256": "39602cedaafc8740284f9b638f156ceaf5d677872db0a4bdb907fa582dc338c4"
+    },
+    {
+      "path": "scripting/ApiDescription.cpp",
+      "sha256": "dbe66a8db60401ea5b8978640315e3ab7ba35caea79f926977bc6c39fb7982eb"
+    },
+    {
+      "path": "scripting/Binding.h",
+      "sha256": "0f73e831508308beda0c4afb2911145a5975f165ccfe30f8b7a8a00754f9801f"
+    },
+    {
+      "path": "scripting/LuaRuntime.cpp",
+      "sha256": "2bbfe5762b5750627f55d017932aea93de3c5b4b6d1ee3801d49d84c7d0013d5"
+    },
+    {
+      "path": "scripting/LuaRuntime.h",
+      "sha256": "596b0a665922d9b1a13ad62baee1779bf4bbefe806f93aac0e5312271bd5a1a8"
+    },
+    {
+      "path": "scripting/ScriptHost.h",
+      "sha256": "16dd3333179e88f637bb26a28e9e3f08262985253c23859c2dbf33bc8f1f5f86"
+    },
+    {
+      "path": "scripting/Timers.h",
+      "sha256": "f0762a73f40b0a39580f7656700ee4547c772eb072a3a840284694b32f537d7b"
+    },
+    {
+      "path": "third_party/lua/lua.h",
+      "sha256": "3b77329f9deed929a5cbe7a7d5fc81ebbb63fd869a49e0a9302fe9240caf1930"
+    }
+  ]
+}

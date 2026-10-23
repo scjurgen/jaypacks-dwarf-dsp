@@ -1,0 +1,46 @@
+{
+  "plugin": "jaystwin",
+  "version": "0.1.0",
+  "date": "2026-10-16",
+  "commit": "2fe778e+changes",
+  "device": {
+    "firmware": "MOD OS v1.13.5.3315",
+    "jack": "48000 Hz, 128 frames"
+  },
+  "source": "siggen white noise at -12 dBFS",
+  "cycles": 3,
+  "window_s": 6.0,
+  "cpu_points": [
+    {
+      "settings": "defaults",
+      "median": 0.6,
+      "min": 0.27,
+      "max": 0.67
+    },
+    {
+      "settings": "preset Bright clean",
+      "median": 0.58,
+      "min": 0.25,
+      "max": 0.68
+    },
+    {
+      "settings": "preset Edge",
+      "median": 0.48,
+      "min": 0.38,
+      "max": 0.58
+    },
+    {
+      "settings": "preset Scooped",
+      "median": 0.58,
+      "min": 0.37,
+      "max": 0.73
+    }
+  ],
+  "memory_kb": {
+    "allocated": 0.9,
+    "peak": 0.9,
+    "counted": "2026-10-16",
+    "binary": 22
+  },
+  "xruns": 0
+}

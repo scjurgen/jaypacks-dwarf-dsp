@@ -1,0 +1,46 @@
+{
+  "name": "midiscript",
+  "displayname": "MIDI Script",
+  "plugintype": "UtilityPlugin",
+  "color": "Midi",
+  "major": 0,
+  "minor": 1,
+  "micro": 0,
+  "shortdescription": "MIDI effect whose logic is a Lua script: arpeggiator, chords, quantiser, your own",
+  "description": [
+    "A MIDI effect for the MOD Dwarf: MIDI in, MIDI out, no audio. What happens to the notes is decided by a Lua script.",
+    "The Script menu selects one of the plugin's scripts (Passthrough, Arpeggiator, Chord Player, Scale Quantiser, Octave Doubler, CC Remap) or one of your own, user-1.lua to user-8.lua in the scripts folder of the device (/data/jaypacks/scripts/midiscript/), which the plugin reloads when the file changes.",
+    "A script reacts to notes, controllers, pitch bend and program changes, to the tempo clock (OnTick) and to timers, and answers with Note, NoteOn, NoteOff, CC, PitchBend, ProgramChange or Pass. API.md in the bundle's scripts folder describes everything a script can do.",
+    "Tempo follows the board's tempo; Sync selects whether the clock runs always or only while the transport rolls. Latency is the time the script gets to answer: everything leaves that many milliseconds after it came in, at exact sample positions. Panic ends every sounding note.",
+    "Script status shows how it went (1 ok), the file <name>.log in the scripts folder says why a script was rejected. Sounding counts the notes that are on, Late the messages that missed their time (raise Latency), Dropped the messages lost to a script in a loop."
+  ],
+  "midi-in": true,
+  "midi-out": true,
+  "worker": true,
+  "audio-ports-in": [],
+  "audio-ports-out": [],
+  "ports-control": [
+    {"hasUI": 1, "display": "Script", "symbol": "script", "default": 0, "property": "enumeration",
+     "listitems": ["Passthrough", "Arpeggiator", "Chord Player", "Scale Quantiser", "Octave Doubler", "CC Remap",
+                   "User 1", "User 2", "User 3", "User 4", "User 5", "User 6", "User 7", "User 8"]},
+    {"hasUI": 1, "display": "Tempo", "symbol": "tempo", "default": 120, "minimum": 20, "maximum": 300,
+     "unit": "bpm", "designation": "beatsPerMinute"},
+    {"hasUI": 1, "display": "Sync", "symbol": "sync", "default": 0, "property": "enumeration",
+     "listitems": ["Free run", "Transport"]},
+    {"hasUI": 1, "display": "Latency", "symbol": "latency", "default": 12, "minimum": 0, "maximum": 50, "unit": "ms"},
+    {"hasUI": 0, "display": "Speed", "symbol": "speed", "default": 0, "minimum": 0, "maximum": 1,
+     "property": "toggled", "designation": "speed"},
+    {"hasUI": 0, "display": "Panic", "symbol": "panic", "default": 0, "minimum": 0, "maximum": 1,
+     "property": "toggled"}
+  ],
+  "ports-control-out": [
+    {"display": "Script status", "symbol": "scriptStatus", "minimum": 0, "maximum": 6, "property": "integer"},
+    {"display": "Sounding", "symbol": "sounding", "minimum": 0, "maximum": 2048, "property": "integer"},
+    {"display": "Late", "symbol": "late", "minimum": 0, "maximum": 16777216, "property": "integer"},
+    {"display": "Dropped", "symbol": "dropped", "minimum": 0, "maximum": 16777216, "property": "integer"}
+  ],
+  "CPP": {
+    "CLASS_NAME": "jp::MidiScriptPedal",
+    "INCLUDE": "plugins/midiscript/MidiScriptPedal.h"
+  }
+}

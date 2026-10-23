@@ -1,0 +1,55 @@
+{
+  "name": "eigenghost",
+  "displayname": "Eigenghost",
+  "status": "alpha",
+  "plugintype": "ReverbPlugin",
+  "color": "Reverb",
+  "major": 0,
+  "minor": 1,
+  "micro": 1,
+  "shortdescription": "Diffused FDN reverb with two pitch-shifting lines",
+  "description": [
+    "A 16-line feedback delay network reverb: the mono input passes six allpass diffusers, then circulates through delay lines mixed by a Hadamard matrix. Two of the lines shift the pitch on every pass, so the tail can climb or fall in intervals (shimmer).",
+    "Decay is the time to fall by 60 dB. Size is the shortest line in metres; Size spread sets the longest line as a multiple of it, Bulge how the lines are spread in between. A change of the size crossfades the lines in 50 ms.",
+    "Pitch 1 and Pitch 2 set the intervals of the two pitch lines in semitones, fractions included (0.1 is 10 cents), Pitch amount how much of their signal is shifted (0: no pitch shifting). Damping is a lowpass in two lines, Low cut a highpass in two others; the feedback spreads both over the whole tail.",
+    "Pre-delay delays the reverb against the dry signal. Diffusion and Diffuser size shape the six input allpasses: the diffuser size is the shortest stage in metres, the longest is three times as long; at Diffusion 0 they add their lengths to the pre-delay (42 ms at 1.3 m).",
+    "Mod depth sets a slow (0.5 Hz) pitch modulation of two lines in cents. Width sets the stereo width of the reverb. Dry and Wet at their minimum mute."
+  ],
+  "audio-ports-in": [
+    {"name": "In", "symbol": "in"}
+  ],
+  "audio-ports-out": [
+    {"name": "Out L", "symbol": "outL"},
+    {"name": "Out R", "symbol": "outR"}
+  ],
+  "ports-control": [
+    {"hasUI": 1, "display": "Decay", "symbol": "decay", "default": 3, "minimum": 0.2, "maximum": 30, "unit": "s", "property": "logarithmic"},
+    {"hasUI": 1, "display": "Dry", "symbol": "dry", "default": 0, "minimum": -60, "maximum": 6, "unit": "db"},
+    {"hasUI": 1, "display": "Wet", "symbol": "wet", "default": -6, "minimum": -60, "maximum": 6, "unit": "db"},
+    {"hasUI": 1, "display": "Size", "symbol": "size", "default": 12, "minimum": 1, "maximum": 40, "unit": "m", "property": "logarithmic"},
+    {"hasUI": 0, "display": "Pre-delay", "symbol": "predelay", "default": 20, "minimum": 0, "maximum": 200, "unit": "ms"},
+    {"hasUI": 0, "display": "Pitch 1", "symbol": "pitch1", "default": 12, "minimum": -24, "maximum": 24, "unit": "semitone"},
+    {"hasUI": 0, "display": "Pitch 2", "symbol": "pitch2", "default": -12, "minimum": -24, "maximum": 24, "unit": "semitone"},
+    {"hasUI": 0, "display": "Pitch amount", "symbol": "shimmer", "default": 50, "minimum": 0, "maximum": 100, "unit": "pc"},
+    {"hasUI": 0, "display": "Reverse", "symbol": "reverse", "default": 0, "minimum": 0, "maximum": 1, "property": "toggled"},
+    {"hasUI": 0, "display": "Diffusion", "symbol": "diffusion", "default": 60, "minimum": 0, "maximum": 100, "unit": "pc"},
+    {"hasUI": 0, "display": "Diffuser size", "symbol": "diffuserSize", "default": 1.3, "minimum": 0.3, "maximum": 5, "unit": "m"},
+    {"hasUI": 0, "display": "Size spread", "symbol": "spread", "default": 3, "minimum": 1, "maximum": 4},
+    {"hasUI": 0, "display": "Bulge", "symbol": "bulge", "default": 0.6, "minimum": -1, "maximum": 1},
+    {"hasUI": 0, "display": "Damping", "symbol": "damping", "default": 3000, "minimum": 200, "maximum": 20000, "unit": "hz", "property": "logarithmic"},
+    {"hasUI": 0, "display": "Low cut", "symbol": "lowCut", "default": 20, "minimum": 10, "maximum": 500, "unit": "hz", "property": "logarithmic"},
+    {"hasUI": 0, "display": "Mod depth", "symbol": "modDepth", "default": 4, "minimum": 0, "maximum": 20, "unit": "cent"},
+    {"hasUI": 0, "display": "Width", "symbol": "width", "default": 100, "minimum": 0, "maximum": 150, "unit": "pc"}
+  ],
+  "presets": [
+    {"name": "Hall", "values": {"decay": 3, "dry": 0, "wet": -6, "size": 12, "shimmer": 0, "diffusion": 60, "damping": 6000}},
+    {"name": "Shimmer", "values": {"decay": 8, "dry": 0, "wet": -4, "size": 16, "pitch1": 12, "pitch2": 19, "shimmer": 60, "damping": 8000}},
+    {"name": "Dark octave down", "values": {"decay": 6, "dry": 0, "wet": -5, "size": 20, "pitch1": -12, "pitch2": -12, "shimmer": 50, "damping": 1500}},
+    {"name": "Plate", "values": {"decay": 3, "dry": 0, "wet": -8, "size": 3.5, "predelay": 8, "pitch1": 12, "pitch2": -12, "shimmer": 0, "reverse": 0, "diffusion": 100, "diffuserSize": 0.5, "spread": 2.5, "bulge": 0.2, "damping": 16000, "lowCut": 120, "modDepth": 6, "width": 120}},
+    {"name": "Small room", "values": {"decay": 0.8, "dry": 0, "wet": -10, "size": 4, "predelay": 4, "pitch1": 12, "pitch2": -12, "shimmer": 0, "reverse": 0, "diffusion": 70, "diffuserSize": 0.8, "spread": 2.5, "bulge": 0.6, "damping": 5000, "lowCut": 40, "modDepth": 3, "width": 100}}
+  ],
+  "CPP": {
+    "CLASS_NAME": "jp::EigenghostPedal",
+    "INCLUDE": "plugins/eigenghost/EigenghostPedal.h"
+  }
+}

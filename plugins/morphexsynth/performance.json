@@ -1,0 +1,70 @@
+{
+  "plugin": "morphexsynth",
+  "version": "0.1.1",
+  "date": "2026-10-18",
+  "commit": "732e9ef+changes",
+  "device": {
+    "firmware": "MOD OS v1.13.5.3315",
+    "jack": "48000 Hz, 128 frames"
+  },
+  "source": "MIDI notes from the ALSA sequencer (see the settings)",
+  "cycles": 3,
+  "window_s": 6.0,
+  "cpu_points": [
+    {
+      "settings": "idle (no note)",
+      "median": 7.22,
+      "min": 7.17,
+      "max": 7.32
+    },
+    {
+      "settings": "1 note, Retro Poly",
+      "median": 11.63,
+      "min": 11.42,
+      "max": 12.0
+    },
+    {
+      "settings": "4 notes, Retro Poly",
+      "median": 19.95,
+      "min": 19.48,
+      "max": 20.62
+    },
+    {
+      "settings": "12 notes, Retro Poly",
+      "median": 47.32,
+      "min": 47.0,
+      "max": 48.28
+    },
+    {
+      "settings": "12 notes, Cutting Lead",
+      "median": 46.48,
+      "min": 46.12,
+      "max": 47.18
+    },
+    {
+      "settings": "12 notes, Airy Pad",
+      "median": 40.65,
+      "min": 40.52,
+      "max": 40.9
+    },
+    {
+      "settings": "12 notes, Section Brass",
+      "median": 49.25,
+      "min": 48.88,
+      "max": 49.98
+    },
+    {
+      "settings": "12 notes, Warm Bass",
+      "median": 43.07,
+      "min": 42.97,
+      "max": 43.18
+    }
+  ],
+  "memory_kb": {
+    "allocated": 2497.5,
+    "peak": 2500.6,
+    "counted": "2026-10-18",
+    "binary": 513
+  },
+  "xruns": 0
+}

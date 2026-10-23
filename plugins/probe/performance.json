@@ -1,0 +1,28 @@
+{
+  "plugin": "probe",
+  "version": "0.1.0",
+  "date": "2026-10-17",
+  "commit": "2552992+changes",
+  "device": {
+    "firmware": "MOD OS v1.13.5.3315",
+    "jack": "48000 Hz, 128 frames"
+  },
+  "source": "siggen white noise at -12 dBFS",
+  "cycles": 3,
+  "window_s": 6.0,
+  "cpu_points": [
+    {
+      "settings": "idle (no note)",
+      "median": 8.72,
+      "min": 8.72,
+      "max": 8.88
+    }
+  ],
+  "memory_kb": {
+    "allocated": 0.2,
+    "peak": 0.2,
+    "counted": "2026-10-17",
+    "binary": 10
+  },
+  "xruns": 0
+}

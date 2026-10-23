@@ -1,0 +1,28 @@
+{
+  "plugin": "siggen",
+  "version": "0.1.0",
+  "date": "2026-10-15",
+  "commit": "e816f12+changes",
+  "device": {
+    "firmware": "MOD OS v1.13.5.3315",
+    "jack": "48000 Hz, 128 frames"
+  },
+  "source": "none (no audio input)",
+  "cycles": 3,
+  "window_s": 6.0,
+  "cpu_points": [
+    {
+      "settings": "defaults",
+      "median": 0.47,
+      "min": 0.3,
+      "max": 0.83
+    }
+  ],
+  "memory_kb": {
+    "allocated": 0.3,
+    "peak": 0.3,
+    "counted": "2026-10-16",
+    "binary": 10
+  },
+  "xruns": 0
+}
